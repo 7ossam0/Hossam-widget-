@@ -1,0 +1,17 @@
+package com.example.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val DarkNavy = Color(0xFF0F172A)
+val SlateCard = Color(0xFF1E293B)
+val SlateBorder = Color(0xFF334155)
+val GoldAccent = Color(0xFFF59E0B)
+val TealAccent = Color(0xFF10B981)
+val BlueAccent = Color(0xFF3B82F6)
+val PurpleAccent = Color(0xFF8B5CF6)
+
+val LightBackground = Color(0xFFF8FAFC)
+val LightSurface = Color(0xFFFFFFFF)
+val LightBorder = Color(0xFFE2E8F0)
+val DarkText = Color(0xFF0F172A)
+val MutedText = Color(0xFF64748B)

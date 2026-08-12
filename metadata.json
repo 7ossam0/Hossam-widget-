@@ -1,0 +1,6 @@
+{
+  "name": "Widget Studio",
+  "description": "استوديو الودجت - محرك إنشاء وتخصيص ودجت الشاشة الرئيسية مع دعم التمرير الفعلي والتغيير التلقائي",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
