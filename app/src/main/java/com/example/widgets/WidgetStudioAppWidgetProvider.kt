@@ -28,19 +28,26 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        val pendingResult = goAsync()
         val repository = WidgetRepository(context)
         CoroutineScope(Dispatchers.IO).launch {
-            repository.seedDatabaseIfEmpty()
-            for (appWidgetId in appWidgetIds) {
-                var config = repository.getWidgetConfigById(appWidgetId)
-                if (config == null) {
-                    config = WidgetConfigEntity(
-                        appWidgetId = appWidgetId,
-                        name = "ودجت رقم $appWidgetId"
-                    )
-                    repository.insertWidgetConfig(config)
+            try {
+                repository.seedDatabaseIfEmpty()
+                for (appWidgetId in appWidgetIds) {
+                    var config = repository.getWidgetConfigById(appWidgetId)
+                    if (config == null) {
+                        config = WidgetConfigEntity(
+                            appWidgetId = appWidgetId,
+                            name = "ودجت الأذكار $appWidgetId"
+                        )
+                        repository.insertWidgetConfig(config)
+                    }
+                    updateWidgetViews(context, appWidgetManager, appWidgetId, config, repository)
                 }
-                updateWidgetViews(context, appWidgetManager, appWidgetId, config, repository)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -54,36 +61,41 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
         )
 
         if (action == WidgetManagerHelper.ACTION_REFRESH_ALL || action == WidgetManagerHelper.ACTION_NEXT) {
+            val pendingResult = goAsync()
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val repository = WidgetRepository(context)
 
             CoroutineScope(Dispatchers.IO).launch {
-                if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                    var config = repository.getWidgetConfigById(appWidgetId)
-                    if (config != null) {
-                        config = config.copy(currentContentIndex = config.currentContentIndex + 1)
-                        repository.updateWidgetConfig(config)
-                    }
-                    withContext(Dispatchers.Main) {
-                        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)
+                try {
+                    if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                        var config = repository.getWidgetConfigById(appWidgetId)
                         if (config != null) {
-                            updateWidgetViews(context, appWidgetManager, appWidgetId, config, repository)
+                            config = config.copy(currentContentIndex = config.currentContentIndex + 1)
+                            repository.updateWidgetConfig(config)
+                        }
+                        updateWidgetViews(context, appWidgetManager, appWidgetId, config, repository)
+                        withContext(Dispatchers.Main) {
+                            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)
+                        }
+                    } else {
+                        val componentName = ComponentName(context, WidgetStudioAppWidgetProvider::class.java)
+                        val ids = appWidgetManager.getAppWidgetIds(componentName)
+                        for (id in ids) {
+                            var cfg = repository.getWidgetConfigById(id)
+                            if (cfg != null) {
+                                cfg = cfg.copy(currentContentIndex = cfg.currentContentIndex + 1)
+                                repository.updateWidgetConfig(cfg)
+                                updateWidgetViews(context, appWidgetManager, id, cfg, repository)
+                            }
+                        }
+                        withContext(Dispatchers.Main) {
+                            appWidgetManager.notifyAppWidgetViewDataChanged(ids, R.id.widget_list_view)
                         }
                     }
-                } else {
-                    val componentName = ComponentName(context, WidgetStudioAppWidgetProvider::class.java)
-                    val ids = appWidgetManager.getAppWidgetIds(componentName)
-                    for (id in ids) {
-                        var cfg = repository.getWidgetConfigById(id)
-                        if (cfg != null) {
-                            cfg = cfg.copy(currentContentIndex = cfg.currentContentIndex + 1)
-                            repository.updateWidgetConfig(cfg)
-                            updateWidgetViews(context, appWidgetManager, id, cfg, repository)
-                        }
-                    }
-                    withContext(Dispatchers.Main) {
-                        appWidgetManager.notifyAppWidgetViewDataChanged(ids, R.id.widget_list_view)
-                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }
@@ -91,10 +103,17 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
+        val pendingResult = goAsync()
         val repository = WidgetRepository(context)
         CoroutineScope(Dispatchers.IO).launch {
-            for (id in appWidgetIds) {
-                repository.deleteWidgetConfig(id)
+            try {
+                for (id in appWidgetIds) {
+                    repository.deleteWidgetConfig(id)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -104,17 +123,33 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
-            config: WidgetConfigEntity,
+            config: WidgetConfigEntity?,
             repository: WidgetRepository
         ) {
+            val currentConfig = config ?: WidgetConfigEntity(appWidgetId = appWidgetId)
             val views = RemoteViews(context.packageName, R.layout.widget_scrollable_layout)
 
+            // Apply Background Color & Transparency (Opacity)
+            try {
+                val parsedBgColor = Color.parseColor(currentConfig.backgroundColorHex)
+                val alpha = (currentConfig.backgroundOpacity * 255).toInt().coerceIn(0, 255)
+                val argbColor = Color.argb(
+                    alpha,
+                    Color.red(parsedBgColor),
+                    Color.green(parsedBgColor),
+                    Color.blue(parsedBgColor)
+                )
+                views.setInt(R.id.widget_container, "setBackgroundColor", argbColor)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             // Config Title
-            if (config.showTitle) {
+            if (currentConfig.showTitle) {
                 views.setViewVisibility(R.id.widget_title, View.VISIBLE)
-                views.setTextViewText(R.id.widget_title, config.name)
+                views.setTextViewText(R.id.widget_title, currentConfig.name)
                 try {
-                    views.setTextColor(R.id.widget_title, Color.parseColor(config.titleColorHex))
+                    views.setTextColor(R.id.widget_title, Color.parseColor(currentConfig.titleColorHex))
                 } catch (e: Exception) {
                     views.setTextColor(R.id.widget_title, Color.parseColor("#F59E0B"))
                 }
@@ -123,10 +158,10 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
             }
 
             // Category tag
-            if (config.showCategory) {
+            if (currentConfig.showCategory) {
                 views.setViewVisibility(R.id.widget_category_tag, View.VISIBLE)
-                val catName = if (config.categoryId != null) {
-                    repository.getCategoryById(config.categoryId)?.name ?: "عام"
+                val catName = if (currentConfig.categoryId != null) {
+                    repository.getCategoryById(currentConfig.categoryId)?.name ?: "عام"
                 } else {
                     "الكل"
                 }
@@ -136,7 +171,7 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
             }
 
             // Date
-            if (config.showDate) {
+            if (currentConfig.showDate) {
                 views.setViewVisibility(R.id.widget_footer_date, View.VISIBLE)
                 val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ar"))
                 views.setTextViewText(R.id.widget_footer_date, dateFormat.format(Date()))

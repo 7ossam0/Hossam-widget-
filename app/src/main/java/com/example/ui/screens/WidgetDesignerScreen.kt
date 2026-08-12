@@ -315,7 +315,31 @@ private fun ColorsTab(
                 onColorSelected = { onUpdateConfig(config.copy(backgroundColorHex = it, gradientStartColorHex = it, gradientEndColorHex = it)) }
             )
 
-            Divider()
+            // Transparency / Opacity Section
+            Text("شفافية الخلفية (الدرجة: ${(config.backgroundOpacity * 100).toInt()}%)", fontWeight = FontWeight.Bold)
+            val opacityPresets = listOf(
+                0.0f to "شفاف (0%)",
+                0.3f to "خفيف (30%)",
+                0.6f to "متوسط (60%)",
+                0.85f to "داكن (85%)",
+                1.0f to "معتم (100%)"
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                opacityPresets.forEach { (alphaVal, label) ->
+                    FilterChip(
+                        selected = kotlin.math.abs(config.backgroundOpacity - alphaVal) < 0.05f,
+                        onClick = { onUpdateConfig(config.copy(backgroundOpacity = alphaVal)) },
+                        label = { Text(label, fontSize = 10.sp) }
+                    )
+                }
+            }
+            Slider(
+                value = config.backgroundOpacity,
+                onValueChange = { onUpdateConfig(config.copy(backgroundOpacity = it)) },
+                valueRange = 0f..1f
+            )
+
+            HorizontalDivider()
 
             ColorPickerRow(
                 label = "لون النص الرئيسي",
@@ -323,7 +347,7 @@ private fun ColorsTab(
                 onColorSelected = { onUpdateConfig(config.copy(textColorHex = it)) }
             )
 
-            Divider()
+            HorizontalDivider()
 
             ColorPickerRow(
                 label = "لون عنوان الودجت",
@@ -331,7 +355,7 @@ private fun ColorsTab(
                 onColorSelected = { onUpdateConfig(config.copy(titleColorHex = it)) }
             )
 
-            Divider()
+            HorizontalDivider()
 
             Text("نمط التدرج (Gradient)", fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

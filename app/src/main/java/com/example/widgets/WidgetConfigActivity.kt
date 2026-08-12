@@ -89,6 +89,23 @@ class WidgetConfigActivity : ComponentActivity() {
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
+                                        repository.seedDatabaseIfEmpty()
+                                        var existing = repository.getWidgetConfigById(appWidgetId)
+                                        if (existing == null) {
+                                            existing = WidgetConfigEntity(
+                                                appWidgetId = appWidgetId,
+                                                name = "ودجت الأذكار"
+                                            )
+                                            repository.insertWidgetConfig(existing)
+                                        }
+                                        val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
+                                        WidgetStudioAppWidgetProvider.updateWidgetViews(
+                                            context = applicationContext,
+                                            appWidgetManager = appWidgetManager,
+                                            appWidgetId = appWidgetId,
+                                            config = existing,
+                                            repository = repository
+                                        )
                                         WidgetManagerHelper.updateSingleWidget(applicationContext, appWidgetId)
                                         val resultValue = Intent().apply {
                                             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)

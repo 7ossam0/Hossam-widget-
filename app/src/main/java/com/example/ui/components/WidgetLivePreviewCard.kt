@@ -51,9 +51,9 @@ fun WidgetLivePreviewCard(
     val padding = config.padding.dp
 
     val backgroundBrush = when (config.gradientDirection) {
-        "TOP_BOTTOM" -> Brush.verticalGradient(listOf(gradStart, gradEnd))
-        "LEFT_RIGHT" -> Brush.horizontalGradient(listOf(gradStart, gradEnd))
-        "DIAGONAL" -> Brush.linearGradient(listOf(gradStart, gradEnd))
+        "TOP_BOTTOM" -> Brush.verticalGradient(listOf(gradStart.copy(alpha = config.backgroundOpacity), gradEnd.copy(alpha = config.backgroundOpacity)))
+        "LEFT_RIGHT" -> Brush.horizontalGradient(listOf(gradStart.copy(alpha = config.backgroundOpacity), gradEnd.copy(alpha = config.backgroundOpacity)))
+        "DIAGONAL" -> Brush.linearGradient(listOf(gradStart.copy(alpha = config.backgroundOpacity), gradEnd.copy(alpha = config.backgroundOpacity)))
         else -> Brush.linearGradient(listOf(bgColor.copy(alpha = config.backgroundOpacity), bgColor.copy(alpha = config.backgroundOpacity)))
     }
 

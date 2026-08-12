@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.StyleSpan
@@ -38,19 +39,25 @@ class WidgetViewsFactory(
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
         
         runBlocking {
-            config = repository.getWidgetConfigById(appWidgetId)
-            val currentConfig = config
-            if (currentConfig != null) {
-                val rawItems = repository.getItemsForWidgetConfig(currentConfig)
-                items = when (currentConfig.rotationMode) {
-                    "RANDOM" -> rawItems.shuffled()
-                    else -> rawItems
+            try {
+                repository.seedDatabaseIfEmpty()
+                config = repository.getWidgetConfigById(appWidgetId)
+                val currentConfig = config
+                if (currentConfig != null) {
+                    val rawItems = repository.getItemsForWidgetConfig(currentConfig)
+                    items = when (currentConfig.rotationMode) {
+                        "RANDOM" -> rawItems.shuffled()
+                        else -> rawItems
+                    }
+                } else {
+                    // Default fallback if config not found
+                    items = repository.getItemsForWidgetConfig(
+                        WidgetConfigEntity(appWidgetId = appWidgetId)
+                    )
                 }
-            } else {
-                // Default fallback if config not found
-                items = repository.getItemsForWidgetConfig(
-                    WidgetConfigEntity(appWidgetId = appWidgetId)
-                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                items = emptyList()
             }
         }
     }
@@ -108,8 +115,14 @@ class WidgetViewsFactory(
             views.setTextColor(R.id.item_body, Color.WHITE)
         }
 
-        // Set font size if possible
-        views.setTextViewTextSize(R.id.item_body, android.util.TypedValue.COMPLEX_UNIT_SP, currentConfig.fontSize.toFloat())
+        // Set font size safely on supported Android versions (API 31+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                views.setTextViewTextSize(R.id.item_body, android.util.TypedValue.COMPLEX_UNIT_SP, currentConfig.fontSize.toFloat())
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
 
         // Set fill intent for item click
         val fillInIntent = Intent().apply {
