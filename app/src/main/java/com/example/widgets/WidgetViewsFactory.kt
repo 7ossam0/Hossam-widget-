@@ -78,10 +78,91 @@ class WidgetViewsFactory(
 
         val views = RemoteViews(context.packageName, R.layout.widget_list_item)
 
+        // Check if we should render via high-fidelity Bitmap Renderer (Custom Font or specific Typography)
+        val useCustomRendering = !currentConfig.customFontPath.isNullOrBlank() || currentConfig.fontFamily != "DEFAULT"
+
+        if (useCustomRendering) {
+            try {
+                val displayMetrics = context.resources.displayMetrics
+                val targetWidth = (displayMetrics.widthPixels - (32 * displayMetrics.density).toInt()).coerceIn(400, 1080)
+                val renderedBitmap = WidgetTextRenderer.renderContentItem(
+                    context = context,
+                    title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
+                    body = item.body,
+                    config = currentConfig,
+                    targetWidthPx = targetWidth
+                )
+
+                views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
+                views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.item_title, android.view.View.GONE)
+                views.setViewVisibility(R.id.item_body, android.view.View.GONE)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                fallbackStandardTextView(views, item, currentConfig)
+            }
+        } else {
+            fallbackStandardTextView(views, item, currentConfig)
+        }
+
+        // Set fill intent for item click
+        val fillInIntent = Intent().apply {
+            putExtra(WidgetManagerHelper.EXTRA_WIDGET_ID, appWidgetId)
+            putExtra("content_id", item.id)
+        }
+        views.setOnClickFillInIntent(R.id.item_container, fillInIntent)
+
+        return views
+    }
+
+    private fun fallbackStandardTextView(
+        views: RemoteViews,
+        item: ContentItemEntity,
+        currentConfig: WidgetConfigEntity
+    ) {
+        views.setViewVisibility(R.id.item_rendered_image, android.view.View.GONE)
+
+        // Calculate Gravity based on alignment & RTL direction
+        val gravity = when (currentConfig.textAlignment) {
+            "RIGHT" -> if (currentConfig.directionRtl) {
+                android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+            } else {
+                android.view.Gravity.RIGHT or android.view.Gravity.CENTER_VERTICAL
+            }
+            "LEFT" -> if (currentConfig.directionRtl) {
+                android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
+            } else {
+                android.view.Gravity.LEFT or android.view.Gravity.CENTER_VERTICAL
+            }
+            else -> android.view.Gravity.CENTER
+        }
+
+        views.setInt(R.id.item_title, "setGravity", gravity)
+        views.setInt(R.id.item_body, "setGravity", gravity)
+
+        // Alignment Span
+        val alignmentSpan = when (currentConfig.textAlignment) {
+            "CENTER" -> android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_CENTER)
+            "RIGHT" -> if (currentConfig.directionRtl) {
+                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_NORMAL)
+            } else {
+                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_OPPOSITE)
+            }
+            "LEFT" -> if (currentConfig.directionRtl) {
+                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_OPPOSITE)
+            } else {
+                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_NORMAL)
+            }
+            else -> android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_CENTER)
+        }
+
         // Title
         if (item.title.isNotBlank() && currentConfig.showTitle) {
             views.setViewVisibility(R.id.item_title, android.view.View.VISIBLE)
-            views.setTextViewText(R.id.item_title, item.title)
+            val titleSpannable = SpannableString(item.title)
+            titleSpannable.setSpan(alignmentSpan, 0, item.title.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            titleSpannable.setSpan(StyleSpan(android.graphics.Typeface.BOLD), 0, item.title.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            views.setTextViewText(R.id.item_title, titleSpannable)
             try {
                 views.setTextColor(R.id.item_title, Color.parseColor(currentConfig.titleColorHex))
             } catch (e: Exception) {
@@ -94,6 +175,7 @@ class WidgetViewsFactory(
         // Body Text
         val bodyText = item.body
         val spannable = SpannableString(bodyText)
+        spannable.setSpan(alignmentSpan, 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         if (currentConfig.isItalic && currentConfig.fontWeight == "BOLD") {
             spannable.setSpan(StyleSpan(android.graphics.Typeface.BOLD_ITALIC), 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -107,6 +189,7 @@ class WidgetViewsFactory(
             spannable.setSpan(UnderlineSpan(), 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
 
+        views.setViewVisibility(R.id.item_body, android.view.View.VISIBLE)
         views.setTextViewText(R.id.item_body, spannable)
 
         try {
@@ -115,7 +198,6 @@ class WidgetViewsFactory(
             views.setTextColor(R.id.item_body, Color.WHITE)
         }
 
-        // Set font size safely on supported Android versions (API 31+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             try {
                 views.setTextViewTextSize(R.id.item_body, android.util.TypedValue.COMPLEX_UNIT_SP, currentConfig.fontSize.toFloat())
@@ -123,15 +205,6 @@ class WidgetViewsFactory(
                 e.printStackTrace()
             }
         }
-
-        // Set fill intent for item click
-        val fillInIntent = Intent().apply {
-            putExtra(WidgetManagerHelper.EXTRA_WIDGET_ID, appWidgetId)
-            putExtra("content_id", item.id)
-        }
-        views.setOnClickFillInIntent(R.id.item_container, fillInIntent)
-
-        return views
     }
 
     override fun getLoadingView(): RemoteViews? = null

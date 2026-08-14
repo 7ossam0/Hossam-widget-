@@ -6,6 +6,15 @@
     android:orientation="vertical"
     android:padding="6dp">
 
+    <ImageView
+        android:id="@+id/item_rendered_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="@null" />
+
     <TextView
         android:id="@+id/item_title"
         android:layout_width="match_parent"
@@ -21,9 +30,11 @@
         android:id="@+id/item_body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="محتوى النص الطويل الذي يظهر داخل الودجت على الشاشة الرئيسية بشكل أنيق وقابل للتمرير..."
+        android:text="محتوى النص..."
         android:textColor="#FFFFFF"
         android:textSize="14sp"
-        android:lineSpacingMultiplier="1.2" />
+        android:lineSpacingMultiplier="1.2"
+        android:visibility="visible" />
 
 </LinearLayout>
+
