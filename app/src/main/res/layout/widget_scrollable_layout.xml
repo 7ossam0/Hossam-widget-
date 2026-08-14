@@ -62,12 +62,13 @@
             android:scaleType="centerInside" />
     </LinearLayout>
 
-    <View
+    <ImageView
         android:id="@+id/widget_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginBottom="4dp"
-        android:background="#33FFFFFF" />
+        android:background="#33FFFFFF"
+        android:contentDescription="@null" />
 
     <!-- Scrollable ListView Container for Vertically Scrollable Content -->
     <FrameLayout
