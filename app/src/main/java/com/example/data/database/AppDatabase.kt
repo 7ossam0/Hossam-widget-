@@ -6,24 +6,28 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.data.dao.CategoryDao
 import com.example.data.dao.ContentItemDao
+import com.example.data.dao.CustomFontDao
 import com.example.data.dao.WidgetConfigDao
 import com.example.data.model.CategoryEntity
 import com.example.data.model.ContentItemEntity
+import com.example.data.model.CustomFontEntity
 import com.example.data.model.WidgetConfigEntity
 
 @Database(
     entities = [
         CategoryEntity::class,
         ContentItemEntity::class,
-        WidgetConfigEntity::class
+        WidgetConfigEntity::class,
+        CustomFontEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun contentItemDao(): ContentItemDao
     abstract fun widgetConfigDao(): WidgetConfigDao
+    abstract fun customFontDao(): CustomFontDao
 
     companion object {
         @Volatile

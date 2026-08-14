@@ -26,6 +26,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val favoriteItems: StateFlow<List<ContentItemEntity>> = repository.favoriteContentItems
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val customFonts: StateFlow<List<com.example.data.model.CustomFontEntity>> = repository.allCustomFonts
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _selectedCategoryIdFilter = MutableStateFlow<Long?>(null)
     val selectedCategoryIdFilter: StateFlow<Long?> = _selectedCategoryIdFilter.asStateFlow()
 
@@ -159,6 +162,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.deleteWidgetConfig(config.appWidgetId)
             WidgetManagerHelper.updateAllWidgets(getApplication())
             _statusMessage.value = "تم حذف إعدادات الودجت"
+        }
+    }
+
+    // Custom Font Operations
+    fun importCustomFont(uri: android.net.Uri, fileName: String, onImported: ((com.example.data.model.CustomFontEntity) -> Unit)? = null) {
+        viewModelScope.launch {
+            val result = repository.importCustomFont(uri, fileName)
+            if (result != null) {
+                _statusMessage.value = "تم استيراد الخط '${result.name}' بنجاح"
+                onImported?.invoke(result)
+            } else {
+                _statusMessage.value = "فشل استيراد ملف الخط"
+            }
+        }
+    }
+
+    fun deleteCustomFont(font: com.example.data.model.CustomFontEntity) {
+        viewModelScope.launch {
+            repository.deleteCustomFont(font)
+            _statusMessage.value = "تم حذف الخط '${font.name}'"
         }
     }
 

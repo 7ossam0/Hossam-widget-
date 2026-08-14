@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,17 +12,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CategoryEntity
 import com.example.data.model.ContentItemEntity
+import com.example.data.model.CustomFontEntity
 import com.example.data.model.WidgetConfigEntity
 import com.example.ui.components.ColorPickerRow
 import com.example.ui.components.WidgetLivePreviewCard
@@ -34,6 +40,22 @@ fun WidgetDesignerScreen(
 
     val categories by viewModel.categories.collectAsState()
     val contentItems by viewModel.contentItems.collectAsState()
+    val customFonts by viewModel.customFonts.collectAsState()
+    val context = LocalContext.current
+
+    val fontPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val fileName = getFileNameFromUri(context, uri)
+            viewModel.importCustomFont(uri, fileName) { imported ->
+                config = config.copy(
+                    fontFamily = "CUSTOM",
+                    customFontPath = imported.filePath
+                )
+            }
+        }
+    }
 
     var previewItems by remember { mutableStateOf<List<ContentItemEntity>>(emptyList()) }
 
@@ -139,7 +161,13 @@ fun WidgetDesignerScreen(
             ) {
                 when (selectedTabIndex) {
                     0 -> ContentSourceTab(config, categories, contentItems) { config = it }
-                    1 -> TypographyTab(config) { config = it }
+                    1 -> TypographyTab(
+                        config = config,
+                        customFonts = customFonts,
+                        onPickCustomFont = { fontPickerLauncher.launch("*/*") },
+                        onDeleteCustomFont = { viewModel.deleteCustomFont(it) },
+                        onUpdateConfig = { config = it }
+                    )
                     2 -> ColorsTab(config) { config = it }
                     3 -> LayoutAndBordersTab(config) { config = it }
                     4 -> RotationAndUpdatesTab(config) { config = it }
@@ -147,6 +175,24 @@ fun WidgetDesignerScreen(
             }
         }
     }
+}
+
+private fun getFileNameFromUri(context: Context, uri: Uri): String {
+    var name = "custom_font.ttf"
+    try {
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    name = it.getString(nameIndex) ?: "custom_font.ttf"
+                }
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return name
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -228,10 +274,13 @@ private fun ContentSourceTab(
 @Composable
 private fun TypographyTab(
     config: WidgetConfigEntity,
+    customFonts: List<CustomFontEntity>,
+    onPickCustomFont: () -> Unit,
+    onDeleteCustomFont: (CustomFontEntity) -> Unit,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("حجم الخط (${config.fontSize} sp)", fontWeight = FontWeight.Bold)
             Slider(
                 value = config.fontSize.toFloat(),
@@ -240,7 +289,8 @@ private fun TypographyTab(
                 steps = 18
             )
 
-            Text("نوع الخط العربي", fontWeight = FontWeight.Bold)
+            // Built-in Arabic fonts
+            Text("الخطوط المدمجة الأساسية", fontWeight = FontWeight.Bold)
             val fontFamilies = listOf(
                 "TAJAWAL" to "تجول (Tajawal)",
                 "CAIRO" to "القاهرة (Cairo)",
@@ -251,12 +301,93 @@ private fun TypographyTab(
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 fontFamilies.forEach { (key, label) ->
                     FilterChip(
-                        selected = config.fontFamily == key,
-                        onClick = { onUpdateConfig(config.copy(fontFamily = key)) },
+                        selected = config.fontFamily == key && config.customFontPath.isNullOrBlank(),
+                        onClick = { onUpdateConfig(config.copy(fontFamily = key, customFontPath = null)) },
                         label = { Text(label, fontSize = 11.sp) }
                     )
                 }
             }
+
+            HorizontalDivider()
+
+            // Custom Imported Fonts Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("الخطوط المخصصة من جهازك", fontWeight = FontWeight.Bold)
+                    Text("يدعم استيراد ملفات الخطوط (TTF / OTF)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                FilledTonalButton(
+                    onClick = onPickCustomFont,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("إضافة خط محلي", fontSize = 11.sp)
+                }
+            }
+
+            if (customFonts.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    customFonts.forEach { font ->
+                        val isSelected = config.customFontPath == font.filePath
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = {
+                                            onUpdateConfig(config.copy(fontFamily = "CUSTOM", customFontPath = font.filePath))
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Column {
+                                        Text(font.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text(font.fileName, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+
+                                IconButton(
+                                    onClick = {
+                                        if (isSelected) {
+                                            onUpdateConfig(config.copy(fontFamily = "TAJAWAL", customFontPath = null))
+                                        }
+                                        onDeleteCustomFont(font)
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "حذف الخط", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    "لم تقم باستيراد خطوط من الجهاز بعد. اضغط على 'إضافة خط محلي' لاختيار أي ملف خط .ttf أو .otf من هاتفك.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            HorizontalDivider()
 
             Text("محاذاة النص", fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -393,7 +524,58 @@ private fun LayoutAndBordersTab(
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            // Widget Lock Feature
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (config.isLocked)
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (config.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                                contentDescription = null,
+                                tint = if (config.isLocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (config.isLocked) "الودجت مقفول (Locked)" else "قفل الويدجت من الفتح",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (config.isLocked)
+                                "مفعّل: عند الضغط على الودجت في الشاشة الرئيسية لن يتم فتح إعدادات التصميم أو التطبيق."
+                            else
+                                "عند التفعيل، لن يؤدي الضغط على الودجت في الشاشة الرئيسية لفتح التطبيق أو إعدادات التصميم.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = config.isLocked,
+                        onCheckedChange = { onUpdateConfig(config.copy(isLocked = it)) }
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
             Text("انحناء الزوايا (Corner Radius: ${config.cornerRadius} dp)", fontWeight = FontWeight.Bold)
             Slider(
                 value = config.cornerRadius.toFloat(),

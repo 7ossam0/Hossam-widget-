@@ -213,21 +213,36 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.btn_widget_next, nextPendingIntent)
 
-            // PendingIntent for Header Click -> Opens App
-            val appIntent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("appWidgetId", appWidgetId)
+            // Handle Widget Click (Header & List Items) based on Lock status
+            if (!currentConfig.isLocked) {
+                // Unlocked: Clicking header or items opens the app/settings
+                val appIntent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    putExtra("appWidgetId", appWidgetId)
+                }
+                val appPendingIntent = PendingIntent.getActivity(
+                    context,
+                    appWidgetId,
+                    appIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_header_bar, appPendingIntent)
+                views.setPendingIntentTemplate(R.id.widget_list_view, appPendingIntent)
+            } else {
+                // Locked: Clicking does NOT open the app or settings
+                val noopIntent = Intent(context, WidgetStudioAppWidgetProvider::class.java).apply {
+                    action = "com.example.widgets.ACTION_LOCKED_NOOP"
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                }
+                val noopPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    appWidgetId + 90000,
+                    noopIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_header_bar, noopPendingIntent)
+                views.setPendingIntentTemplate(R.id.widget_list_view, noopPendingIntent)
             }
-            val appPendingIntent = PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                appIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_header_bar, appPendingIntent)
-
-            // Item template pending intent for clicking items
-            views.setPendingIntentTemplate(R.id.widget_list_view, appPendingIntent)
 
             // Update Widget
             appWidgetManager.updateAppWidget(appWidgetId, views)

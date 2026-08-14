@@ -72,11 +72,28 @@ fun WidgetLivePreviewCard(
         else -> TextAlign.Center
     }
 
-    val selectedFontFamily = when (config.fontFamily) {
-        "CAIRO" -> FontFamily.Serif
-        "AMIRI" -> FontFamily.Serif
-        "NOTO_KUFI" -> FontFamily.SansSerif
-        else -> FontFamily.Default
+    val selectedFontFamily = androidx.compose.runtime.remember(config.fontFamily, config.customFontPath) {
+        if (!config.customFontPath.isNullOrBlank()) {
+            try {
+                val file = java.io.File(config.customFontPath)
+                if (file.exists()) {
+                    val typeface = android.graphics.Typeface.createFromFile(file)
+                    FontFamily(androidx.compose.ui.text.font.Typeface(typeface))
+                } else {
+                    FontFamily.Default
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                FontFamily.Default
+            }
+        } else {
+            when (config.fontFamily) {
+                "CAIRO" -> FontFamily.Serif
+                "AMIRI" -> FontFamily.Serif
+                "NOTO_KUFI" -> FontFamily.SansSerif
+                else -> FontFamily.Default
+            }
+        }
     }
 
     Box(

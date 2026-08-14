@@ -24,7 +24,9 @@ data class WidgetConfigEntity(
     val fontWeight: String = "NORMAL", // "NORMAL", "MEDIUM", "BOLD"
     val isItalic: Boolean = false,
     val isUnderline: Boolean = false,
-    val fontFamily: String = "TAJAWAL", // "DEFAULT", "CAIRO", "TAJAWAL", "AMIRI", "NOTO_KUFI", "NOTO_NASKH"
+    val fontFamily: String = "TAJAWAL", // "DEFAULT", "CAIRO", "TAJAWAL", "AMIRI", "NOTO_KUFI", "NOTO_NASKH", "CUSTOM"
+    val customFontPath: String? = null,
+    val isLocked: Boolean = false, // When true, clicking on home screen widget will not open config/app
     val textAlignment: String = "CENTER", // "LEFT", "CENTER", "RIGHT"
     val directionRtl: Boolean = true,
     val lineSpacing: Float = 1.2f,

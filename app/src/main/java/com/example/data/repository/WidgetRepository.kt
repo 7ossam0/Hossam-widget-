@@ -15,10 +15,56 @@ class WidgetRepository(private val context: Context) {
     private val categoryDao = db.categoryDao()
     private val contentItemDao = db.contentItemDao()
     private val widgetConfigDao = db.widgetConfigDao()
+    private val customFontDao = db.customFontDao()
 
     private val moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
         .build()
+
+    // Custom Fonts
+    val allCustomFonts: Flow<List<CustomFontEntity>> = customFontDao.getAllFonts()
+    suspend fun getCustomFontById(id: Long) = customFontDao.getFontById(id)
+    suspend fun importCustomFont(uri: android.net.Uri, displayFileName: String): CustomFontEntity? = withContext(Dispatchers.IO) {
+        try {
+            val fontsDir = java.io.File(context.filesDir, "custom_fonts")
+            if (!fontsDir.exists()) fontsDir.mkdirs()
+
+            val cleanName = displayFileName.substringBeforeLast(".")
+            val extension = displayFileName.substringAfterLast(".", "ttf")
+            val destFile = java.io.File(fontsDir, "font_${System.currentTimeMillis()}.$extension")
+
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                destFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            if (destFile.exists() && destFile.length() > 0) {
+                val entity = CustomFontEntity(
+                    name = cleanName,
+                    filePath = destFile.absolutePath,
+                    fileName = displayFileName
+                )
+                val id = customFontDao.insertFont(entity)
+                entity.copy(id = id)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun deleteCustomFont(font: CustomFontEntity) = withContext(Dispatchers.IO) {
+        try {
+            val file = java.io.File(font.filePath)
+            if (file.exists()) file.delete()
+            customFontDao.deleteFont(font)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     // Categories
     val allCategories: Flow<List<CategoryEntity>> = categoryDao.getAllCategories()
@@ -145,15 +191,43 @@ class WidgetRepository(private val context: Context) {
             }
             val newConfigs = exportData.widgetConfigs.map {
                 WidgetConfigEntity(
-                    it.appWidgetId, it.name, it.categoryId, it.contentMode, it.singleContentId,
-                    it.selectedContentIds, it.backgroundColorHex, it.gradientStartColorHex,
-                    it.gradientEndColorHex, it.gradientDirection, it.backgroundOpacity,
-                    it.textColorHex, it.titleColorHex, it.secondaryTextColorHex, it.fontSize,
-                    it.fontWeight, it.isItalic, it.isUnderline, it.fontFamily, it.textAlignment,
-                    it.directionRtl, it.lineSpacing, it.letterSpacing, it.cornerRadius,
-                    it.padding, it.borderWidth, it.borderColorHex, it.showTitle, it.showCategory,
-                    it.showDate, it.rotationMode, it.rotationIntervalMinutes, it.currentContentIndex,
-                    it.createdAt, it.updatedAt
+                    appWidgetId = it.appWidgetId,
+                    name = it.name,
+                    categoryId = it.categoryId,
+                    contentMode = it.contentMode,
+                    singleContentId = it.singleContentId,
+                    selectedContentIds = it.selectedContentIds,
+                    backgroundColorHex = it.backgroundColorHex,
+                    gradientStartColorHex = it.gradientStartColorHex,
+                    gradientEndColorHex = it.gradientEndColorHex,
+                    gradientDirection = it.gradientDirection,
+                    backgroundOpacity = it.backgroundOpacity,
+                    textColorHex = it.textColorHex,
+                    titleColorHex = it.titleColorHex,
+                    secondaryTextColorHex = it.secondaryTextColorHex,
+                    fontSize = it.fontSize,
+                    fontWeight = it.fontWeight,
+                    isItalic = it.isItalic,
+                    isUnderline = it.isUnderline,
+                    fontFamily = it.fontFamily,
+                    customFontPath = null,
+                    isLocked = false,
+                    textAlignment = it.textAlignment,
+                    directionRtl = it.directionRtl,
+                    lineSpacing = it.lineSpacing,
+                    letterSpacing = it.letterSpacing,
+                    cornerRadius = it.cornerRadius,
+                    padding = it.padding,
+                    borderWidth = it.borderWidth,
+                    borderColorHex = it.borderColorHex,
+                    showTitle = it.showTitle,
+                    showCategory = it.showCategory,
+                    showDate = it.showDate,
+                    rotationMode = it.rotationMode,
+                    rotationIntervalMinutes = it.rotationIntervalMinutes,
+                    currentContentIndex = it.currentContentIndex,
+                    createdAt = it.createdAt,
+                    updatedAt = it.updatedAt
                 )
             }
 
