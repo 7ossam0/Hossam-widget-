@@ -63,11 +63,14 @@ class WidgetRepository(private val context: Context) {
 
     // Resolves content items for a specific widget config
     suspend fun getItemsForWidgetConfig(config: WidgetConfigEntity): List<ContentItemEntity> = withContext(Dispatchers.IO) {
-        when (config.contentMode) {
+        seedDatabaseIfEmpty()
+        val items = when (config.contentMode) {
             "SINGLE" -> {
-                val id = config.singleContentId ?: return@withContext emptyList()
-                val item = contentItemDao.getContentItemById(id)
-                if (item != null && item.isActive) listOf(item) else emptyList()
+                val id = config.singleContentId
+                if (id != null) {
+                    val item = contentItemDao.getContentItemById(id)
+                    if (item != null && item.isActive) listOf(item) else emptyList()
+                } else emptyList()
             }
             "MULTIPLE" -> {
                 val ids = config.selectedContentIds
@@ -84,6 +87,13 @@ class WidgetRepository(private val context: Context) {
                 }
             }
             else -> contentItemDao.getActiveContentItemsList()
+        }
+
+        if (items.isNotEmpty()) {
+            items
+        } else {
+            val allActive = contentItemDao.getActiveContentItemsList()
+            if (allActive.isNotEmpty()) allActive else SampleData.initialContentItems
         }
     }
 

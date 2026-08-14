@@ -33,8 +33,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="6dp"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
+            android:paddingLeft="6dp"
+            android:paddingRight="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
             android:text="أذكار"
             android:textColor="#E0E0E0"
             android:textSize="10sp"
@@ -45,21 +47,19 @@
             android:id="@+id/btn_widget_refresh"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_popup_sync"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_widget_refresh"
             android:contentDescription="تحديث"
-            android:scaleType="centerInside"
-            android:tint="#FFFFFF" />
+            android:scaleType="centerInside" />
 
         <ImageButton
             android:id="@+id/btn_widget_next"
             android:layout_width="28dp"
             android:layout_height="28dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_media_next"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_widget_next"
             android:contentDescription="التالي"
-            android:scaleType="centerInside"
-            android:tint="#FFFFFF" />
+            android:scaleType="centerInside" />
     </LinearLayout>
 
     <View
@@ -81,9 +81,7 @@
             android:layout_height="match_parent"
             android:divider="@null"
             android:dividerHeight="6dp"
-            android:scrollbars="vertical"
-            android:fadingEdge="vertical"
-            android:fadingEdgeLength="12dp" />
+            android:scrollbars="vertical" />
 
         <TextView
             android:id="@+id/widget_empty_view"
