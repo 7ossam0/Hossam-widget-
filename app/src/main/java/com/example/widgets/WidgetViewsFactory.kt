@@ -45,9 +45,22 @@ class WidgetViewsFactory(
                 val currentConfig = config
                 if (currentConfig != null) {
                     val rawItems = repository.getItemsForWidgetConfig(currentConfig)
-                    items = when (currentConfig.rotationMode) {
-                        "RANDOM" -> rawItems.shuffled()
-                        else -> rawItems
+                    if (rawItems.isNotEmpty()) {
+                        val totalCount = rawItems.size
+                        val currentIndex = (currentConfig.currentContentIndex % totalCount + totalCount) % totalCount
+                        items = when (currentConfig.rotationMode) {
+                            "RANDOM" -> {
+                                val random = java.util.Random(currentConfig.currentContentIndex.toLong() + System.currentTimeMillis() / 1000)
+                                val shuffled = rawItems.toMutableList()
+                                java.util.Collections.shuffle(shuffled, random)
+                                shuffled
+                            }
+                            else -> {
+                                rawItems.drop(currentIndex) + rawItems.take(currentIndex)
+                            }
+                        }
+                    } else {
+                        items = emptyList()
                     }
                 } else {
                     // Default fallback if config not found
@@ -84,7 +97,7 @@ class WidgetViewsFactory(
         if (useCustomRendering) {
             try {
                 val displayMetrics = context.resources.displayMetrics
-                val targetWidth = (displayMetrics.widthPixels - (32 * displayMetrics.density).toInt()).coerceIn(400, 1080)
+                val targetWidth = (displayMetrics.widthPixels - (48 * displayMetrics.density).toInt()).coerceIn(320, 600)
                 val renderedBitmap = WidgetTextRenderer.renderContentItem(
                     context = context,
                     title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,

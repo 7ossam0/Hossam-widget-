@@ -189,18 +189,18 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
 
             // PendingIntent for Refresh button (⟳)
             val refreshIntent = Intent(context, WidgetStudioAppWidgetProvider::class.java).apply {
-                action = WidgetManagerHelper.ACTION_NEXT
+                action = WidgetManagerHelper.ACTION_REFRESH_ALL
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             }
             val refreshPendingIntent = PendingIntent.getBroadcast(
                 context,
-                appWidgetId,
+                appWidgetId + 20000,
                 refreshIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             views.setOnClickPendingIntent(R.id.btn_widget_refresh, refreshPendingIntent)
 
-            // PendingIntent for Next button
+            // PendingIntent for Next button (⮞)
             val nextIntent = Intent(context, WidgetStudioAppWidgetProvider::class.java).apply {
                 action = WidgetManagerHelper.ACTION_NEXT
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -213,9 +213,9 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.btn_widget_next, nextPendingIntent)
 
-            // Handle Widget Click (Header & List Items) based on Lock status
+            // Handle Widget Click (Title Area & List Items) based on Lock status
             if (!currentConfig.isLocked) {
-                // Unlocked: Clicking header or items opens the app/settings
+                // Unlocked: Clicking title container opens the app/settings
                 val appIntent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     putExtra("appWidgetId", appWidgetId)
@@ -226,7 +226,7 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
                     appIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                views.setOnClickPendingIntent(R.id.widget_header_bar, appPendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_title_container, appPendingIntent)
                 views.setPendingIntentTemplate(R.id.widget_list_view, appPendingIntent)
             } else {
                 // Locked: Clicking does NOT open the app or settings
@@ -240,7 +240,7 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
                     noopIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                views.setOnClickPendingIntent(R.id.widget_header_bar, noopPendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_title_container, noopPendingIntent)
                 views.setPendingIntentTemplate(R.id.widget_list_view, noopPendingIntent)
             }
 

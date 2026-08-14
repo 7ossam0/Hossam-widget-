@@ -96,6 +96,26 @@ fun WidgetLivePreviewCard(
         }
     }
 
+    val displayItems = androidx.compose.runtime.remember(items, config.currentContentIndex, config.rotationMode) {
+        if (items.isNotEmpty()) {
+            val totalCount = items.size
+            val currentIndex = (config.currentContentIndex % totalCount + totalCount) % totalCount
+            when (config.rotationMode) {
+                "RANDOM" -> {
+                    val random = java.util.Random(config.currentContentIndex.toLong())
+                    val shuffled = items.toMutableList()
+                    java.util.Collections.shuffle(shuffled, random)
+                    shuffled
+                }
+                else -> {
+                    items.drop(currentIndex) + items.take(currentIndex)
+                }
+            }
+        } else {
+            emptyList()
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -173,7 +193,7 @@ fun WidgetLivePreviewCard(
             )
 
             // Scrollable Content Area
-            if (items.isEmpty()) {
+            if (displayItems.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -193,7 +213,7 @@ fun WidgetLivePreviewCard(
                         .heightIn(min = 90.dp, max = 220.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(items, key = { it.id }) { item ->
+                    items(displayItems, key = { it.id }) { item ->
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = when (config.textAlignment) {

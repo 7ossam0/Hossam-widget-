@@ -134,6 +134,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun advanceWidgetContent(config: WidgetConfigEntity) {
+        viewModelScope.launch {
+            val updated = config.copy(
+                currentContentIndex = config.currentContentIndex + 1,
+                updatedAt = System.currentTimeMillis()
+            )
+            repository.updateWidgetConfig(updated)
+            WidgetManagerHelper.updateSingleWidget(getApplication(), config.appWidgetId)
+        }
+    }
+
     fun copyWidgetConfig(config: WidgetConfigEntity) {
         viewModelScope.launch {
             val currentList = widgetConfigs.value

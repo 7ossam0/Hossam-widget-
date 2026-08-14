@@ -416,8 +416,8 @@ fun HomeScreen(
                                 config = config,
                                 items = items,
                                 categoryName = catName,
-                                onRefreshClick = { viewModel.triggerWidgetRefreshBroadcast(config.appWidgetId) },
-                                onNextClick = { viewModel.triggerWidgetRefreshBroadcast(config.appWidgetId) }
+                                onRefreshClick = { viewModel.advanceWidgetContent(config) },
+                                onNextClick = { viewModel.advanceWidgetContent(config) }
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
