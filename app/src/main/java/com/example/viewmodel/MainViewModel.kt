@@ -136,10 +136,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun copyWidgetConfig(config: WidgetConfigEntity) {
         viewModelScope.launch {
+            val currentList = widgetConfigs.value
+            val nextSortOrder = (currentList.maxOfOrNull { it.sortOrder } ?: 0) + 1
             val newAppWidgetId = (1000..9999).random()
             val copied = config.copy(
                 appWidgetId = newAppWidgetId,
                 name = "${config.name} (نسخة)",
+                sortOrder = nextSortOrder,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
@@ -149,12 +152,70 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun createNewStandaloneWidgetConfig(name: String, categoryId: Long?): WidgetConfigEntity {
+        val currentList = widgetConfigs.value
+        val nextSortOrder = (currentList.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val newAppWidgetId = (10000..99999).random()
         return WidgetConfigEntity(
             appWidgetId = newAppWidgetId,
             name = if (name.isNotBlank()) name else "ودجت جديد $newAppWidgetId",
-            categoryId = categoryId
+            categoryId = categoryId,
+            sortOrder = nextSortOrder
         )
+    }
+
+    fun moveWidgetUp(config: WidgetConfigEntity) {
+        viewModelScope.launch {
+            val list = widgetConfigs.value
+            val currentIndex = list.indexOfFirst { it.appWidgetId == config.appWidgetId }
+            if (currentIndex > 0) {
+                val prevConfig = list[currentIndex - 1]
+                val updatedPrev = prevConfig.copy(sortOrder = currentIndex)
+                val updatedCurrent = config.copy(sortOrder = currentIndex - 1)
+                repository.insertWidgetConfigs(listOf(updatedPrev, updatedCurrent))
+                _statusMessage.value = "تم تحريك الودجت للأعلى ⬆️"
+            }
+        }
+    }
+
+    fun moveWidgetDown(config: WidgetConfigEntity) {
+        viewModelScope.launch {
+            val list = widgetConfigs.value
+            val currentIndex = list.indexOfFirst { it.appWidgetId == config.appWidgetId }
+            if (currentIndex >= 0 && currentIndex < list.size - 1) {
+                val nextConfig = list[currentIndex + 1]
+                val updatedNext = nextConfig.copy(sortOrder = currentIndex)
+                val updatedCurrent = config.copy(sortOrder = currentIndex + 1)
+                repository.insertWidgetConfigs(listOf(updatedNext, updatedCurrent))
+                _statusMessage.value = "تم تحريك الودجت للأسفل ⬇️"
+            }
+        }
+    }
+
+    fun sortWidgetsNewestFirst() {
+        viewModelScope.launch {
+            val list = widgetConfigs.value.sortedByDescending { it.createdAt }
+            val reordered = list.mapIndexed { index, item -> item.copy(sortOrder = index) }
+            repository.insertWidgetConfigs(reordered)
+            _statusMessage.value = "تم ترتيب الودجات: الأحدث أولاً"
+        }
+    }
+
+    fun sortWidgetsOldestFirst() {
+        viewModelScope.launch {
+            val list = widgetConfigs.value.sortedBy { it.createdAt }
+            val reordered = list.mapIndexed { index, item -> item.copy(sortOrder = index) }
+            repository.insertWidgetConfigs(reordered)
+            _statusMessage.value = "تم ترتيب الودجات: الأقدم أولاً"
+        }
+    }
+
+    fun sortWidgetsAlphabetically() {
+        viewModelScope.launch {
+            val list = widgetConfigs.value.sortedBy { it.name }
+            val reordered = list.mapIndexed { index, item -> item.copy(sortOrder = index) }
+            repository.insertWidgetConfigs(reordered)
+            _statusMessage.value = "تم ترتيب الودجات: أبجدياً"
+        }
     }
 
     fun deleteWidgetConfig(config: WidgetConfigEntity) {

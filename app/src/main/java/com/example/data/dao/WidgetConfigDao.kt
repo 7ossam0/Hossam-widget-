@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WidgetConfigDao {
-    @Query("SELECT * FROM widget_configs ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM widget_configs ORDER BY sortOrder ASC, appWidgetId ASC")
     fun getAllWidgetConfigs(): Flow<List<WidgetConfigEntity>>
 
-    @Query("SELECT * FROM widget_configs ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM widget_configs ORDER BY sortOrder ASC, appWidgetId ASC")
     suspend fun getAllWidgetConfigsList(): List<WidgetConfigEntity>
 
     @Query("SELECT * FROM widget_configs WHERE appWidgetId = :appWidgetId")

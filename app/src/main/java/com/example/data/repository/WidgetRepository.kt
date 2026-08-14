@@ -88,6 +88,7 @@ class WidgetRepository(private val context: Context) {
     suspend fun getWidgetConfigById(appWidgetId: Int) = widgetConfigDao.getWidgetConfigById(appWidgetId)
     fun getWidgetConfigByIdFlow(appWidgetId: Int) = widgetConfigDao.getWidgetConfigByIdFlow(appWidgetId)
     suspend fun insertWidgetConfig(config: WidgetConfigEntity) = widgetConfigDao.insertWidgetConfig(config)
+    suspend fun insertWidgetConfigs(configs: List<WidgetConfigEntity>) = widgetConfigDao.insertWidgetConfigs(configs)
     suspend fun updateWidgetConfig(config: WidgetConfigEntity) = widgetConfigDao.updateWidgetConfig(config)
     suspend fun deleteWidgetConfig(appWidgetId: Int) = widgetConfigDao.deleteWidgetConfigById(appWidgetId)
 
@@ -161,7 +162,7 @@ class WidgetRepository(private val context: Context) {
                 it.directionRtl, it.lineSpacing, it.letterSpacing, it.cornerRadius,
                 it.padding, it.borderWidth, it.borderColorHex, it.showTitle, it.showCategory,
                 it.showDate, it.rotationMode, it.rotationIntervalMinutes, it.currentContentIndex,
-                it.createdAt, it.updatedAt
+                it.sortOrder, it.createdAt, it.updatedAt
             )
         }
         val exportData = ExportData(
@@ -226,6 +227,7 @@ class WidgetRepository(private val context: Context) {
                     rotationMode = it.rotationMode,
                     rotationIntervalMinutes = it.rotationIntervalMinutes,
                     currentContentIndex = it.currentContentIndex,
+                    sortOrder = it.sortOrder,
                     createdAt = it.createdAt,
                     updatedAt = it.updatedAt
                 )

@@ -58,6 +58,7 @@ data class WidgetConfigDto(
     val rotationMode: String,
     val rotationIntervalMinutes: Int,
     val currentContentIndex: Int,
+    val sortOrder: Int = 0,
     val createdAt: Long,
     val updatedAt: Long
 )

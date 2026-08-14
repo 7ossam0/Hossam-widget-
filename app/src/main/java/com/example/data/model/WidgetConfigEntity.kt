@@ -41,6 +41,7 @@ data class WidgetConfigEntity(
     val rotationMode: String = "MANUAL", // "AUTO", "MANUAL", "RANDOM", "SEQUENTIAL"
     val rotationIntervalMinutes: Int = 30, // 5, 15, 30, 60, 180, 1440
     val currentContentIndex: Int = 0,
+    val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -238,27 +239,62 @@ fun HomeScreen(
                 }
             }
 
-            // Home Screen Widgets List
+            // Home Screen Widgets List Header & Sorting Options
             item {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "الودجت المصممة (${widgetConfigs.size})",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "يمكنك التمرير داخل الودجت وتخصيصها بالكامل",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "الودجت المصممة (${widgetConfigs.size})",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "خصص الترتيب للأعلى/للأسفل ⬆️⬇️",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (widgetConfigs.size > 1) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                            text = "ترتيب سريع:",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        SuggestionChip(
+                            onClick = { viewModel.sortWidgetsNewestFirst() },
+                            label = { Text("الأحدث أولاً", fontSize = 11.sp) },
+                            icon = { Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                        )
+                        SuggestionChip(
+                            onClick = { viewModel.sortWidgetsOldestFirst() },
+                            label = { Text("الأقدم أولاً", fontSize = 11.sp) },
+                            icon = { Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                        )
+                        SuggestionChip(
+                            onClick = { viewModel.sortWidgetsAlphabetically() },
+                            label = { Text("أبجدي", fontSize = 11.sp) },
+                            icon = { Icon(Icons.Default.SortByAlpha, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                        )
+                    }
                 }
             }
+        }
 
             if (widgetConfigs.isEmpty()) {
                 item {
@@ -296,7 +332,7 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(widgetConfigs, key = { it.appWidgetId }) { config ->
+                itemsIndexed(widgetConfigs, key = { _, it -> it.appWidgetId }) { index, config ->
                     var items by remember { mutableStateOf<List<ContentItemEntity>>(emptyList()) }
 
                     LaunchedEffect(config) {
@@ -311,6 +347,70 @@ fun HomeScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
+                            // Widget Order & Title Header
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "#${index + 1}",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = config.name,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+                                // Reorder Up / Down Action Controls
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    FilledTonalIconButton(
+                                        onClick = { viewModel.moveWidgetUp(config) },
+                                        enabled = index > 0,
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ArrowUpward,
+                                            contentDescription = "نقل لأعلى",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+
+                                    FilledTonalIconButton(
+                                        onClick = { viewModel.moveWidgetDown(config) },
+                                        enabled = index < widgetConfigs.size - 1,
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ArrowDownward,
+                                            contentDescription = "نقل لأسفل",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+
                             // Live Preview Component
                             WidgetLivePreviewCard(
                                 config = config,
