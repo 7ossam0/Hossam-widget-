@@ -20,7 +20,10 @@ data class WidgetConfigEntity(
     val textColorHex: String = "#FFFFFF",
     val titleColorHex: String = "#F59E0B",
     val secondaryTextColorHex: String = "#94A3B8",
-    val fontSize: Int = 14, // sp
+    val titleFontSize: Int = 15, // sp for title
+    val titleAlignment: String = "CENTER", // "LEFT", "CENTER", "RIGHT"
+    val titleFontWeight: String = "BOLD", // "NORMAL", "BOLD"
+    val fontSize: Int = 14, // sp for body content
     val fontWeight: String = "NORMAL", // "NORMAL", "MEDIUM", "BOLD"
     val isItalic: Boolean = false,
     val isUnderline: Boolean = false,

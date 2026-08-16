@@ -20,7 +20,7 @@ import com.example.data.model.WidgetConfigEntity
         WidgetConfigEntity::class,
         CustomFontEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

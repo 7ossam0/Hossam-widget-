@@ -17,21 +17,32 @@ android {
     applicationId = "com.aistudio.widgetstudio.app"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "1.1"
+    versionCode = 3
+    versionName = "1.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
-    }
     val debugKeystoreFile = file("${rootDir}/debug.keystore")
+    val hasReleaseKeystore = System.getenv("KEYSTORE_PATH") != null && file(System.getenv("KEYSTORE_PATH") ?: "").exists()
+
+    if (hasReleaseKeystore) {
+      create("release") {
+        storeFile = file(System.getenv("KEYSTORE_PATH")!!)
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+      }
+    } else if (debugKeystoreFile.exists()) {
+      create("release") {
+        storeFile = debugKeystoreFile
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
+    }
+
     if (debugKeystoreFile.exists()) {
       create("debugConfig") {
         storeFile = debugKeystoreFile
@@ -47,10 +58,13 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      val releaseConfig = signingConfigs.findByName("release")
+      if (releaseConfig != null) {
+        signingConfig = releaseConfig
+      }
     }
     debug {
-      val debugConfig = signingConfigs.findByName("debugConfig")
+      val debugConfig = signingConfigs.findByName("debugConfig") ?: signingConfigs.findByName("release")
       if (debugConfig != null) {
         signingConfig = debugConfig
       }

@@ -91,30 +91,24 @@ class WidgetViewsFactory(
 
         val views = RemoteViews(context.packageName, R.layout.widget_list_item)
 
-        // Check if we should render via high-fidelity Bitmap Renderer (Custom Font or specific Typography)
-        val useCustomRendering = !currentConfig.customFontPath.isNullOrBlank() || currentConfig.fontFamily != "DEFAULT"
+        // Always render via high-fidelity Bitmap Renderer for 100% pixel-perfect match
+        try {
+            val displayMetrics = context.resources.displayMetrics
+            val targetWidth = (displayMetrics.widthPixels - (32 * displayMetrics.density).toInt()).coerceIn(340, 900)
+            val renderedBitmap = WidgetTextRenderer.renderContentItem(
+                context = context,
+                title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
+                body = item.body,
+                config = currentConfig,
+                targetWidthPx = targetWidth
+            )
 
-        if (useCustomRendering) {
-            try {
-                val displayMetrics = context.resources.displayMetrics
-                val targetWidth = (displayMetrics.widthPixels - (48 * displayMetrics.density).toInt()).coerceIn(320, 600)
-                val renderedBitmap = WidgetTextRenderer.renderContentItem(
-                    context = context,
-                    title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
-                    body = item.body,
-                    config = currentConfig,
-                    targetWidthPx = targetWidth
-                )
-
-                views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
-                views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
-                views.setViewVisibility(R.id.item_title, android.view.View.GONE)
-                views.setViewVisibility(R.id.item_body, android.view.View.GONE)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                fallbackStandardTextView(views, item, currentConfig)
-            }
-        } else {
+            views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
+            views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
+            views.setViewVisibility(R.id.item_title, android.view.View.GONE)
+            views.setViewVisibility(R.id.item_body, android.view.View.GONE)
+        } catch (e: Throwable) {
+            e.printStackTrace()
             fallbackStandardTextView(views, item, currentConfig)
         }
 

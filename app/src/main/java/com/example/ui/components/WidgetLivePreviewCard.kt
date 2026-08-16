@@ -63,10 +63,21 @@ fun WidgetLivePreviewCard(
         else -> FontWeight.Normal
     }
 
+    val titleFontWeight = when (config.titleFontWeight) {
+        "NORMAL" -> FontWeight.Normal
+        else -> FontWeight.Bold
+    }
+
     val textFontStyle = if (config.isItalic) FontStyle.Italic else FontStyle.Normal
     val textDecoration = if (config.isUnderline) TextDecoration.Underline else TextDecoration.None
 
     val textAlign = when (config.textAlignment) {
+        "LEFT" -> TextAlign.Left
+        "RIGHT" -> TextAlign.Right
+        else -> TextAlign.Center
+    }
+
+    val titleTextAlign = when (config.titleAlignment) {
         "LEFT" -> TextAlign.Left
         "RIGHT" -> TextAlign.Right
         else -> TextAlign.Center
@@ -215,27 +226,24 @@ fun WidgetLivePreviewCard(
                 ) {
                     items(displayItems, key = { it.id }) { item ->
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = when (config.textAlignment) {
-                                "LEFT" -> Alignment.Start
-                                "RIGHT" -> Alignment.End
-                                else -> Alignment.CenterHorizontally
-                            }
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             if (item.title.isNotBlank() && config.showTitle) {
                                 val annotatedTitle = RichTextHelper.htmlToAnnotatedString(
                                     htmlText = item.title,
                                     defaultColor = titleColor,
-                                    defaultFontSize = (config.fontSize - 1).coerceAtLeast(10).sp
+                                    defaultFontSize = config.titleFontSize.sp
                                 )
                                 Text(
                                     text = annotatedTitle,
                                     color = titleColor,
-                                    fontSize = (config.fontSize - 1).coerceAtLeast(10).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = textAlign,
-                                    fontFamily = selectedFontFamily
+                                    fontSize = config.titleFontSize.sp,
+                                    fontWeight = titleFontWeight,
+                                    textAlign = titleTextAlign,
+                                    fontFamily = selectedFontFamily,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
                             val annotatedBody = RichTextHelper.htmlToAnnotatedString(
                                 htmlText = item.body,

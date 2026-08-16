@@ -16,7 +16,7 @@ import java.io.File
 
 object WidgetTextRenderer {
 
-    fun getTypeface(config: WidgetConfigEntity): Typeface {
+    fun getTypeface(config: WidgetConfigEntity, isBold: Boolean = false, isItalic: Boolean = false): Typeface {
         // 1. Try Custom Font File
         if (!config.customFontPath.isNullOrBlank()) {
             try {
@@ -24,9 +24,9 @@ object WidgetTextRenderer {
                 if (file.exists() && file.canRead()) {
                     val baseTypeface = Typeface.createFromFile(file)
                     val style = when {
-                        config.isItalic && config.fontWeight == "BOLD" -> Typeface.BOLD_ITALIC
-                        config.fontWeight == "BOLD" -> Typeface.BOLD
-                        config.isItalic -> Typeface.ITALIC
+                        isItalic && isBold -> Typeface.BOLD_ITALIC
+                        isBold -> Typeface.BOLD
+                        isItalic -> Typeface.ITALIC
                         else -> Typeface.NORMAL
                     }
                     return Typeface.create(baseTypeface, style)
@@ -45,9 +45,9 @@ object WidgetTextRenderer {
         }
 
         val style = when {
-            config.isItalic && config.fontWeight == "BOLD" -> Typeface.BOLD_ITALIC
-            config.fontWeight == "BOLD" -> Typeface.BOLD
-            config.isItalic -> Typeface.ITALIC
+            isItalic && isBold -> Typeface.BOLD_ITALIC
+            isBold -> Typeface.BOLD
+            isItalic -> Typeface.ITALIC
             else -> Typeface.NORMAL
         }
         return Typeface.create(baseTypeface, style)
@@ -64,29 +64,44 @@ object WidgetTextRenderer {
         val scaledDensity = context.resources.displayMetrics.scaledDensity
 
         val width = targetWidthPx.coerceAtLeast(300)
-        val typeface = getTypeface(config)
 
-        // Alignment calculation
-        val alignment = when (config.textAlignment) {
-            "CENTER" -> Layout.Alignment.ALIGN_CENTER
-            "RIGHT" -> if (config.directionRtl) Layout.Alignment.ALIGN_NORMAL else Layout.Alignment.ALIGN_OPPOSITE
-            "LEFT" -> if (config.directionRtl) Layout.Alignment.ALIGN_OPPOSITE else Layout.Alignment.ALIGN_NORMAL
+        // Body Typeface
+        val bodyTypeface = getTypeface(
+            config = config,
+            isBold = config.fontWeight == "BOLD",
+            isItalic = config.isItalic
+        )
+
+        // Title Typeface
+        val titleTypeface = getTypeface(
+            config = config,
+            isBold = config.titleFontWeight == "BOLD",
+            isItalic = false
+        )
+
+        // Title Alignment
+        val titleAlignment = when (config.titleAlignment) {
+            "RIGHT" -> Layout.Alignment.ALIGN_NORMAL
+            "LEFT" -> Layout.Alignment.ALIGN_OPPOSITE
             else -> Layout.Alignment.ALIGN_CENTER
         }
 
-        val textDirection = if (config.directionRtl) {
-            TextDirectionHeuristics.RTL
-        } else {
-            TextDirectionHeuristics.LTR
+        // Body Alignment
+        val bodyAlignment = when (config.textAlignment) {
+            "RIGHT" -> Layout.Alignment.ALIGN_NORMAL
+            "LEFT" -> Layout.Alignment.ALIGN_OPPOSITE
+            else -> Layout.Alignment.ALIGN_CENTER
         }
 
-        // Title Setup
+        val textDirection = TextDirectionHeuristics.RTL
+
+        // Title Layout Setup
         var titleLayout: StaticLayout? = null
         if (!title.isNullOrBlank() && config.showTitle) {
             val spannedTitle = com.example.ui.components.RichTextHelper.htmlToSpanned(title)
             val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                this.typeface = Typeface.create(typeface, Typeface.BOLD)
-                textSize = (config.fontSize + 2) * scaledDensity
+                this.typeface = titleTypeface
+                textSize = config.titleFontSize * scaledDensity
                 try {
                     color = Color.parseColor(config.titleColorHex)
                 } catch (e: Exception) {
@@ -99,21 +114,21 @@ object WidgetTextRenderer {
 
             titleLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 StaticLayout.Builder.obtain(spannedTitle, 0, spannedTitle.length, titlePaint, width)
-                    .setAlignment(alignment)
+                    .setAlignment(titleAlignment)
                     .setTextDirection(textDirection)
-                    .setLineSpacing(0f, 1.1f)
+                    .setLineSpacing(0f, 1.15f)
                     .setIncludePad(true)
                     .build()
             } else {
                 @Suppress("DEPRECATION")
-                StaticLayout(spannedTitle, titlePaint, width, alignment, 1.1f, 0f, true)
+                StaticLayout(spannedTitle, titlePaint, width, titleAlignment, 1.15f, 0f, true)
             }
         }
 
-        // Body Setup
+        // Body Layout Setup
         val spannedBody = com.example.ui.components.RichTextHelper.htmlToSpanned(body)
         val bodyPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.typeface = typeface
+            this.typeface = bodyTypeface
             textSize = config.fontSize * scaledDensity
             try {
                 color = Color.parseColor(config.textColorHex)
@@ -130,14 +145,14 @@ object WidgetTextRenderer {
 
         val bodyLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             StaticLayout.Builder.obtain(spannedBody, 0, spannedBody.length, bodyPaint, width)
-                .setAlignment(alignment)
+                .setAlignment(bodyAlignment)
                 .setTextDirection(textDirection)
                 .setLineSpacing(0f, config.lineSpacing.coerceIn(0.8f, 2.5f))
                 .setIncludePad(true)
                 .build()
         } else {
             @Suppress("DEPRECATION")
-            StaticLayout(spannedBody, bodyPaint, width, alignment, config.lineSpacing, 0f, true)
+            StaticLayout(spannedBody, bodyPaint, width, bodyAlignment, config.lineSpacing, 0f, true)
         }
 
         val spacingBetween = if (titleLayout != null) (8 * density).toInt() else 0

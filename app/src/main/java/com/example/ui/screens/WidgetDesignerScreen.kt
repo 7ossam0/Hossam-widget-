@@ -63,15 +63,15 @@ fun WidgetDesignerScreen(
         previewItems = viewModel.getItemsForWidget(config)
     }
 
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("المحتوى", "الخطوط", "الألوان", "التنسيق", "التناوب")
+    var selectedTabIndex by remember { mutableIntStateOf(1) } // Default to Typography & Text styling tab
+    val tabs = listOf("المحتوى", "تنسيق النصوص", "الألوان", "الهيكل", "التناوب")
 
     val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("مصمم الودجت - Live Designer", style = MaterialTheme.typography.titleMedium) },
+                title = { Text("مصمم الودجت - Live Designer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
@@ -90,7 +90,7 @@ fun WidgetDesignerScreen(
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("حفظ")
+                        Text("حفظ التعديلات")
                     }
                 }
             )
@@ -114,7 +114,7 @@ fun WidgetDesignerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "معاينة مباشرة (Live Preview)",
+                        text = "معاينة مباشرة للودجت على شاشة الهاتف (Live Preview)",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -145,7 +145,7 @@ fun WidgetDesignerScreen(
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
-                        text = { Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                        text = { Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                     )
                 }
             }
@@ -248,22 +248,32 @@ private fun ContentSourceTab(
 
             if (config.contentMode == "SINGLE") {
                 Text("اختر النص المحدد", fontWeight = FontWeight.Bold)
-                contentItems.forEach { item ->
-                    Card(
-                        onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (config.singleContentId == item.id)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surface
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            if (item.title.isNotBlank()) {
-                                Text(item.title, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            }
-                            Text(item.body, fontSize = 12.sp, maxLines = 2)
-                        }
+                val currentSingleItem = contentItems.find { it.id == config.singleContentId }
+                Text(
+                    text = currentSingleItem?.title?.ifEmpty { currentSingleItem.body } ?: "لم يتم اختيار نص",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    contentItems.forEach { item ->
+                        val isSelected = config.singleContentId == item.id
+                        ListItem(
+                            headlineContent = { Text(item.title.ifEmpty { item.body.take(30) + "..." }, fontSize = 12.sp) },
+                            leadingContent = {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) }
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -279,174 +289,333 @@ private fun TypographyTab(
     onDeleteCustomFont: (CustomFontEntity) -> Unit,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("حجم الخط (${config.fontSize} sp)", fontWeight = FontWeight.Bold)
-            Slider(
-                value = config.fontSize.toFloat(),
-                onValueChange = { onUpdateConfig(config.copy(fontSize = it.toInt())) },
-                valueRange = 10f..28f,
-                steps = 18
-            )
-
-            // Built-in Arabic fonts
-            Text("الخطوط المدمجة الأساسية", fontWeight = FontWeight.Bold)
-            val fontFamilies = listOf(
-                "TAJAWAL" to "تجول (Tajawal)",
-                "CAIRO" to "القاهرة (Cairo)",
-                "AMIRI" to "الأميري (Amiri)",
-                "NOTO_KUFI" to "كوفي (Noto Kufi)",
-                "DEFAULT" to "الافتراضي"
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                fontFamilies.forEach { (key, label) ->
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        
+        // 1. Title Styling Section (تنسيق العنوان بشكل مستقل)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Title, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("تنسيق العنوان (Title)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                     FilterChip(
-                        selected = config.fontFamily == key && config.customFontPath.isNullOrBlank(),
-                        onClick = { onUpdateConfig(config.copy(fontFamily = key, customFontPath = null)) },
-                        label = { Text(label, fontSize = 11.sp) }
+                        selected = config.showTitle,
+                        onClick = { onUpdateConfig(config.copy(showTitle = !config.showTitle)) },
+                        label = { Text(if (config.showTitle) "العنوان مفعّل" else "العنوان مخفي", fontSize = 10.sp) }
+                    )
+                }
+
+                if (config.showTitle) {
+                    // Title Font Size
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("حجم خط العنوان:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text("${config.titleFontSize} sp", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Slider(
+                        value = config.titleFontSize.toFloat(),
+                        onValueChange = { onUpdateConfig(config.copy(titleFontSize = it.toInt())) },
+                        valueRange = 10f..30f,
+                        steps = 20
+                    )
+
+                    // Title Alignment
+                    Text("محاذاة العنوان:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = config.titleAlignment == "RIGHT",
+                            onClick = { onUpdateConfig(config.copy(titleAlignment = "RIGHT")) },
+                            leadingIcon = { Icon(Icons.Default.FormatAlignRight, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            label = { Text("يمين") }
+                        )
+                        FilterChip(
+                            selected = config.titleAlignment == "CENTER",
+                            onClick = { onUpdateConfig(config.copy(titleAlignment = "CENTER")) },
+                            leadingIcon = { Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            label = { Text("وسط") }
+                        )
+                        FilterChip(
+                            selected = config.titleAlignment == "LEFT",
+                            onClick = { onUpdateConfig(config.copy(titleAlignment = "LEFT")) },
+                            leadingIcon = { Icon(Icons.Default.FormatAlignLeft, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            label = { Text("يسار") }
+                        )
+                    }
+
+                    // Title Weight
+                    Text("سُمك خط العنوان:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = config.titleFontWeight == "BOLD",
+                            onClick = { onUpdateConfig(config.copy(titleFontWeight = "BOLD")) },
+                            label = { Text("عريض (Bold)") }
+                        )
+                        FilterChip(
+                            selected = config.titleFontWeight == "NORMAL",
+                            onClick = { onUpdateConfig(config.copy(titleFontWeight = "NORMAL")) },
+                            label = { Text("عادي (Normal)") }
+                        )
+                    }
+
+                    // Title Color
+                    ColorPickerRow(
+                        label = "لون العنوان",
+                        selectedColorHex = config.titleColorHex,
+                        onColorSelected = { onUpdateConfig(config.copy(titleColorHex = it)) }
                     )
                 }
             }
+        }
 
-            HorizontalDivider()
-
-            // Custom Imported Fonts Section
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("الخطوط المخصصة من جهازك", fontWeight = FontWeight.Bold)
-                    Text("يدعم استيراد ملفات الخطوط (TTF / OTF)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // 2. Body Content Styling Section (تنسيق نص الدعاء والمحتوى بشكل مستقل)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("تنسيق نص الدعاء والذكر (Body Content)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
-                FilledTonalButton(
-                    onClick = onPickCustomFont,
-                    shape = RoundedCornerShape(8.dp)
+
+                // Body Font Size
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("إضافة خط محلي", fontSize = 11.sp)
+                    Text("حجم خط النص الأساسي:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text("${config.fontSize} sp", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
-            }
+                Slider(
+                    value = config.fontSize.toFloat(),
+                    onValueChange = { onUpdateConfig(config.copy(fontSize = it.toInt())) },
+                    valueRange = 10f..32f,
+                    steps = 22
+                )
 
-            if (customFonts.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    customFonts.forEach { font ->
-                        val isSelected = config.customFontPath == font.filePath
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                // Body Alignment
+                Text("محاذاة نص الدعاء:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = config.textAlignment == "RIGHT",
+                        onClick = { onUpdateConfig(config.copy(textAlignment = "RIGHT")) },
+                        leadingIcon = { Icon(Icons.Default.FormatAlignRight, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        label = { Text("يمين (RTL)") }
+                    )
+                    FilterChip(
+                        selected = config.textAlignment == "CENTER",
+                        onClick = { onUpdateConfig(config.copy(textAlignment = "CENTER")) },
+                        leadingIcon = { Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        label = { Text("وسط") }
+                    )
+                    FilterChip(
+                        selected = config.textAlignment == "LEFT",
+                        onClick = { onUpdateConfig(config.copy(textAlignment = "LEFT")) },
+                        leadingIcon = { Icon(Icons.Default.FormatAlignLeft, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        label = { Text("يسار") }
+                    )
+                }
+
+                // Body Color
+                ColorPickerRow(
+                    label = "لون النص الأساسي",
+                    selectedColorHex = config.textColorHex,
+                    onColorSelected = { onUpdateConfig(config.copy(textColorHex = it)) }
+                )
+
+                // Body Formatting Chips
+                Text("تأثيرات الخط:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = config.fontWeight == "BOLD",
+                        onClick = {
+                            val newWeight = if (config.fontWeight == "BOLD") "NORMAL" else "BOLD"
+                            onUpdateConfig(config.copy(fontWeight = newWeight))
+                        },
+                        label = { Text("عريض Bold") }
+                    )
+                    FilterChip(
+                        selected = config.isItalic,
+                        onClick = { onUpdateConfig(config.copy(isItalic = !config.isItalic)) },
+                        label = { Text("مائل Italic") }
+                    )
+                    FilterChip(
+                        selected = config.isUnderline,
+                        onClick = { onUpdateConfig(config.copy(isUnderline = !config.isUnderline)) },
+                        label = { Text("سطر سفلي") }
+                    )
+                }
+
+                HorizontalDivider()
+
+                // Line Spacing
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("تباعد الأسطر:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text("${String.format(java.util.Locale.US, "%.1f", config.lineSpacing)}x", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                Slider(
+                    value = config.lineSpacing,
+                    onValueChange = { onUpdateConfig(config.copy(lineSpacing = it)) },
+                    valueRange = 0.9f..2.5f,
+                    steps = 15
+                )
+
+                // Letter Spacing
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("تباعد الحروف:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text("${String.format(java.util.Locale.US, "%.1f", config.letterSpacing)}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                Slider(
+                    value = config.letterSpacing,
+                    onValueChange = { onUpdateConfig(config.copy(letterSpacing = it)) },
+                    valueRange = -1.0f..3.0f,
+                    steps = 8
+                )
+            }
+        }
+
+        // 3. Font Family Section (نوع الخط والخطوط المستوردة)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FontDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("نوع الخط (Font Family)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
+                // Built-in Arabic fonts
+                Text("الخطوط المدمجة الأساسية:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                val fontFamilies = listOf(
+                    "TAJAWAL" to "تجول (Tajawal)",
+                    "CAIRO" to "القاهرة (Cairo)",
+                    "AMIRI" to "الأميري (Amiri)",
+                    "NOTO_KUFI" to "كوفي (Noto Kufi)",
+                    "DEFAULT" to "الافتراضي"
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    fontFamilies.forEach { (key, label) ->
+                        FilterChip(
+                            selected = config.fontFamily == key && config.customFontPath.isNullOrBlank(),
+                            onClick = { onUpdateConfig(config.copy(fontFamily = key, customFontPath = null)) },
+                            label = { Text(label, fontSize = 10.sp) }
+                        )
+                    }
+                }
+
+                HorizontalDivider()
+
+                // Custom Imported Fonts Section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("الخطوط المخصصة من جهازك:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Text("استيراد أي خط بصيغة TTF أو OTF", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    FilledTonalButton(
+                        onClick = onPickCustomFont,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("إضافة خط من الهاتف", fontSize = 11.sp)
+                    }
+                }
+
+                if (customFonts.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        customFonts.forEach { font ->
+                            val isSelected = config.customFontPath == font.filePath
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = {
-                                            onUpdateConfig(config.copy(fontFamily = "CUSTOM", customFontPath = font.filePath))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = {
+                                                onUpdateConfig(config.copy(fontFamily = "CUSTOM", customFontPath = font.filePath))
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Column {
+                                            Text(font.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            Text(font.fileName, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Column {
-                                        Text(font.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        Text(font.fileName, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                }
 
-                                IconButton(
-                                    onClick = {
-                                        if (isSelected) {
-                                            onUpdateConfig(config.copy(fontFamily = "TAJAWAL", customFontPath = null))
+                                    IconButton(
+                                        onClick = {
+                                            if (isSelected) {
+                                                onUpdateConfig(config.copy(fontFamily = "TAJAWAL", customFontPath = null))
+                                            }
+                                            onDeleteCustomFont(font)
                                         }
-                                        onDeleteCustomFont(font)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "حذف الخط", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                     }
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "حذف الخط", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
                     }
+                } else {
+                    Text(
+                        "لم تقم باستيراد خطوط من الجهاز بعد. اضغط على 'إضافة خط من الهاتف' لاختيار أي ملف خط .ttf أو .otf من جهازك.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            } else {
-                Text(
-                    "لم تقم باستيراد خطوط من الجهاز بعد. اضغط على 'إضافة خط محلي' لاختيار أي ملف خط .ttf أو .otf من هاتفك.",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-
-            HorizontalDivider()
-
-            Text("محاذاة النص", fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = config.textAlignment == "CENTER",
-                    onClick = { onUpdateConfig(config.copy(textAlignment = "CENTER")) },
-                    label = { Text("وسط") }
-                )
-                FilterChip(
-                    selected = config.textAlignment == "RIGHT",
-                    onClick = { onUpdateConfig(config.copy(textAlignment = "RIGHT")) },
-                    label = { Text("يمين (RTL)") }
-                )
-                FilterChip(
-                    selected = config.textAlignment == "LEFT",
-                    onClick = { onUpdateConfig(config.copy(textAlignment = "LEFT")) },
-                    label = { Text("يسار") }
-                )
-            }
-
-            Text("تنسيق إضافي", fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilterChip(
-                    selected = config.fontWeight == "BOLD",
-                    onClick = {
-                        val newWeight = if (config.fontWeight == "BOLD") "NORMAL" else "BOLD"
-                        onUpdateConfig(config.copy(fontWeight = newWeight))
-                    },
-                    label = { Text("عريض Bold") }
-                )
-                FilterChip(
-                    selected = config.isItalic,
-                    onClick = { onUpdateConfig(config.copy(isItalic = !config.isItalic)) },
-                    label = { Text("مائل Italic") }
-                )
-                FilterChip(
-                    selected = config.isUnderline,
-                    onClick = { onUpdateConfig(config.copy(isUnderline = !config.isUnderline)) },
-                    label = { Text("سطر سفلي") }
-                )
-            }
-
-            HorizontalDivider()
-
-            Text("تباعد الأسطر (Line Spacing: ${String.format(java.util.Locale.US, "%.1f", config.lineSpacing)}x)", fontWeight = FontWeight.Bold)
-            Slider(
-                value = config.lineSpacing,
-                onValueChange = { onUpdateConfig(config.copy(lineSpacing = it)) },
-                valueRange = 0.9f..2.5f,
-                steps = 15
-            )
-
-            Text("تباعد الحروف (Letter Spacing: ${String.format(java.util.Locale.US, "%.1f", config.letterSpacing)})", fontWeight = FontWeight.Bold)
-            Slider(
-                value = config.letterSpacing,
-                onValueChange = { onUpdateConfig(config.copy(letterSpacing = it)) },
-                valueRange = -1.0f..3.0f,
-                steps = 8
-            )
         }
     }
 }
@@ -491,7 +660,7 @@ private fun ColorsTab(
             HorizontalDivider()
 
             ColorPickerRow(
-                label = "لون النص الرئيسي",
+                label = "لون النص الرئيسي (Body)",
                 selectedColorHex = config.textColorHex,
                 onColorSelected = { onUpdateConfig(config.copy(textColorHex = it)) }
             )
@@ -499,7 +668,7 @@ private fun ColorsTab(
             HorizontalDivider()
 
             ColorPickerRow(
-                label = "لون عنوان الودجت",
+                label = "لون عنوان الودجت (Title)",
                 selectedColorHex = config.titleColorHex,
                 onColorSelected = { onUpdateConfig(config.copy(titleColorHex = it)) }
             )
@@ -614,7 +783,7 @@ private fun LayoutAndBordersTab(
                 onColorSelected = { onUpdateConfig(config.copy(borderColorHex = it)) }
             )
 
-            Text("عناصر العرض", fontWeight = FontWeight.Bold)
+            Text("عناصر العرض في الودجت", fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = config.showTitle,
