@@ -118,6 +118,30 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        val pendingResult = goAsync()
+        val repository = WidgetRepository(context)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val config = repository.getWidgetConfigById(appWidgetId)
+                updateWidgetViews(context, appWidgetManager, appWidgetId, config, repository)
+                withContext(Dispatchers.Main) {
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
+            }
+        }
+    }
+
     companion object {
         suspend fun updateWidgetViews(
             context: Context,
@@ -135,8 +159,9 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
                 val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
                 val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 240).coerceAtLeast(100)
                 val minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 160).coerceAtLeast(100)
-                val widthPx = (minWidthDp * density).toInt().coerceIn(200, 1400)
-                val heightPx = (minHeightDp * density).toInt().coerceIn(150, 1400)
+                val maxHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, minHeightDp).coerceAtLeast(minHeightDp)
+                val widthPx = (minWidthDp * density).toInt().coerceIn(200, 2400)
+                val heightPx = (maxHeightDp * density).toInt().coerceIn(150, 2400)
 
                 val bgBitmap = WidgetTextRenderer.renderWidgetBackground(
                     context = context,

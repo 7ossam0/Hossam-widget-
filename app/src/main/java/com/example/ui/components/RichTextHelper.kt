@@ -38,8 +38,10 @@ object RichTextHelper {
     ): CharSequence {
         if (htmlText.isBlank()) return ""
         val spanned = try {
-            // First process custom style spans (like background-color and mark tags)
+            // First convert newlines to <br/> so HtmlCompat does not strip or collapse line breaks
             var processed = htmlText
+                .replace("\r\n", "<br/>")
+                .replace("\n", "<br/>")
                 .replace(Regex("<mark(?: style=\"background-color:\\s*([^\"]+)\")?>(.*?)</mark>", RegexOption.DOT_MATCHES_ALL)) { match ->
                     val color = match.groups[1]?.value ?: "#FEF08A"
                     "<span style=\"background-color:$color\">${match.groups[2]?.value ?: ""}</span>"
@@ -114,7 +116,8 @@ object RichTextHelper {
         }
 
         return try {
-            val spanned = HtmlCompat.fromHtml(htmlText, HtmlCompat.FROM_HTML_MODE_LEGACY)
+            val processedHtml = htmlText.replace("\r\n", "<br/>").replace("\n", "<br/>")
+            val spanned = HtmlCompat.fromHtml(processedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY)
             val text = spanned.toString()
 
             buildAnnotatedString {
