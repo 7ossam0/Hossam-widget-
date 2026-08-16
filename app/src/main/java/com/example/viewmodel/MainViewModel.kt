@@ -79,18 +79,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Content Item Operations
-    fun addContentItem(title: String, body: String, categoryId: Long?, isFavorite: Boolean = false) {
+    fun addContentItem(title: String, body: String, categoryId: Long?, isFavorite: Boolean = false, repeatCount: Int = 1) {
         viewModelScope.launch {
             if (body.isNotBlank()) {
                 val item = ContentItemEntity(
                     title = title.trim(),
                     body = body.trim(),
                     categoryId = categoryId,
-                    isFavorite = isFavorite
+                    isFavorite = isFavorite,
+                    repeatCount = repeatCount.coerceAtLeast(1)
                 )
                 repository.insertContentItem(item)
                 WidgetManagerHelper.updateAllWidgets(getApplication())
                 _statusMessage.value = "تم إضافة النص بنجاح"
+            }
+        }
+    }
+
+    fun addBulkContentItems(itemsList: List<Pair<String, String>>, categoryId: Long?) {
+        viewModelScope.launch {
+            var addedCount = 0
+            val currentOrder = contentItems.value.size
+            for ((idx, pair) in itemsList.withIndex()) {
+                val (t, b) = pair
+                if (b.isNotBlank()) {
+                    val item = ContentItemEntity(
+                        title = t.trim(),
+                        body = b.trim(),
+                        categoryId = categoryId,
+                        sortOrder = currentOrder + idx + 1
+                    )
+                    repository.insertContentItem(item)
+                    addedCount++
+                }
+            }
+            if (addedCount > 0) {
+                WidgetManagerHelper.updateAllWidgets(getApplication())
+                _statusMessage.value = "تمت إضافة $addedCount نص/دعاء بنجاح"
             }
         }
     }
@@ -269,6 +294,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Backup & Import/Export
     suspend fun exportDataJson(): String {
         return repository.exportToJson()
+    }
+
+    suspend fun exportToFileUri(uri: android.net.Uri): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val json = repository.exportToJson()
+            getApplication<Application>().contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.write(json.toByteArray(Charsets.UTF_8))
+                stream.flush()
+            }
+            _statusMessage.value = "تم حفظ ملف النسخة الاحتياطية بنجاح 💾"
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _statusMessage.value = "فشل حفظ الملف: ${e.message}"
+            false
+        }
+    }
+
+    suspend fun importFromFileUri(uri: android.net.Uri): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val jsonString = getApplication<Application>().contentResolver.openInputStream(uri)?.use { stream ->
+                stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            } ?: return@withContext false
+
+            val result = repository.importFromJson(jsonString)
+            if (result) {
+                WidgetManagerHelper.updateAllWidgets(getApplication())
+                _statusMessage.value = "تم استيراد النسخة الاحتياطية من الملف بنجاح! 📂"
+            } else {
+                _statusMessage.value = "صيغة الملف غير صالحة أو تالفة"
+            }
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _statusMessage.value = "فشل قراءة الملف: ${e.message}"
+            false
+        }
     }
 
     suspend fun importDataJson(jsonString: String): Boolean {

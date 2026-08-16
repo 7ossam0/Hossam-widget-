@@ -51,6 +51,15 @@ fun HomeScreen(
     }
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var widgetSearchQuery by remember { mutableStateOf("") }
+
+    val filteredWidgetConfigs = remember(widgetConfigs, widgetSearchQuery) {
+        if (widgetSearchQuery.isBlank()) {
+            widgetConfigs
+        } else {
+            widgetConfigs.filter { it.name.contains(widgetSearchQuery, ignoreCase = true) }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -265,6 +274,21 @@ fun HomeScreen(
                         )
                     }
 
+                    // Search Widget Field
+                    if (widgetConfigs.size > 2) {
+                        OutlinedTextField(
+                            value = widgetSearchQuery,
+                            onValueChange = { widgetSearchQuery = it },
+                            placeholder = { Text("بحث بين الودجات المصممة...", fontSize = 12.sp) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            trailingIcon = if (widgetSearchQuery.isNotEmpty()) {
+                                { IconButton(onClick = { widgetSearchQuery = "" }) { Icon(Icons.Default.Close, contentDescription = "مسح", modifier = Modifier.size(16.dp)) } }
+                            } else null,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     if (widgetConfigs.size > 1) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -272,31 +296,31 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                            text = "ترتيب سريع:",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        SuggestionChip(
-                            onClick = { viewModel.sortWidgetsNewestFirst() },
-                            label = { Text("الأحدث أولاً", fontSize = 11.sp) },
-                            icon = { Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                        )
-                        SuggestionChip(
-                            onClick = { viewModel.sortWidgetsOldestFirst() },
-                            label = { Text("الأقدم أولاً", fontSize = 11.sp) },
-                            icon = { Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                        )
-                        SuggestionChip(
-                            onClick = { viewModel.sortWidgetsAlphabetically() },
-                            label = { Text("أبجدي", fontSize = 11.sp) },
-                            icon = { Icon(Icons.Default.SortByAlpha, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                        )
+                                text = "ترتيب سريع:",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            SuggestionChip(
+                                onClick = { viewModel.sortWidgetsNewestFirst() },
+                                label = { Text("الأحدث أولاً", fontSize = 11.sp) },
+                                icon = { Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            )
+                            SuggestionChip(
+                                onClick = { viewModel.sortWidgetsOldestFirst() },
+                                label = { Text("الأقدم أولاً", fontSize = 11.sp) },
+                                icon = { Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            )
+                            SuggestionChip(
+                                onClick = { viewModel.sortWidgetsAlphabetically() },
+                                label = { Text("أبجدي", fontSize = 11.sp) },
+                                icon = { Icon(Icons.Default.SortByAlpha, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            )
+                        }
                     }
                 }
             }
-        }
 
-            if (widgetConfigs.isEmpty()) {
+            if (filteredWidgetConfigs.isEmpty()) {
                 item {
                     Card(
                         modifier = Modifier
@@ -318,7 +342,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                "لم تقم بإنشاء ودجت حتى الآن",
+                                if (widgetSearchQuery.isNotEmpty()) "لا توجد ودجت مطابقة لبحثك" else "لم تقم بإنشاء ودجت حتى الآن",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
                             )
@@ -332,7 +356,7 @@ fun HomeScreen(
                     }
                 }
             } else {
-                itemsIndexed(widgetConfigs, key = { _, it -> it.appWidgetId }) { index, config ->
+                itemsIndexed(filteredWidgetConfigs, key = { _, it -> it.appWidgetId }) { index, config ->
                     var items by remember { mutableStateOf<List<ContentItemEntity>>(emptyList()) }
 
                     LaunchedEffect(config) {
@@ -438,6 +462,28 @@ fun HomeScreen(
                                 }
 
                                 Row {
+                                    // Share Text/Dua Button
+                                    IconButton(onClick = {
+                                        val displayItem = items.getOrNull(config.currentContentIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)))
+                                        val textToShare = if (displayItem != null) {
+                                            val cleanTitle = displayItem.title.replace(Regex("<[^>]*>"), "")
+                                            val cleanBody = displayItem.body.replace(Regex("<[^>]*>"), "")
+                                            if (cleanTitle.isNotBlank()) "$cleanTitle\n\n$cleanBody" else cleanBody
+                                        } else {
+                                            config.name
+                                        }
+
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_SUBJECT, config.name)
+                                            putExtra(Intent.EXTRA_TEXT, textToShare)
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "مشاركة النص"))
+                                    }) {
+                                        Icon(Icons.Default.Share, contentDescription = "مشاركة", tint = MaterialTheme.colorScheme.tertiary)
+                                    }
+
                                     IconButton(onClick = { viewModel.copyWidgetConfig(config) }) {
                                         Icon(Icons.Default.ContentCopy, contentDescription = "نسخ", tint = MaterialTheme.colorScheme.primary)
                                     }

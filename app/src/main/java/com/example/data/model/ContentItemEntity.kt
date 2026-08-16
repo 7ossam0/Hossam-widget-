@@ -13,6 +13,7 @@ data class ContentItemEntity(
     val sortOrder: Int = 0,
     val isActive: Boolean = true,
     val isFavorite: Boolean = false,
+    val repeatCount: Int = 1,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

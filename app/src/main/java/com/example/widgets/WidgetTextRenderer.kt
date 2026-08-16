@@ -83,6 +83,7 @@ object WidgetTextRenderer {
         // Title Setup
         var titleLayout: StaticLayout? = null
         if (!title.isNullOrBlank() && config.showTitle) {
+            val spannedTitle = com.example.ui.components.RichTextHelper.htmlToSpanned(title)
             val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 this.typeface = Typeface.create(typeface, Typeface.BOLD)
                 textSize = (config.fontSize + 2) * scaledDensity
@@ -97,7 +98,7 @@ object WidgetTextRenderer {
             }
 
             titleLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                StaticLayout.Builder.obtain(title, 0, title.length, titlePaint, width)
+                StaticLayout.Builder.obtain(spannedTitle, 0, spannedTitle.length, titlePaint, width)
                     .setAlignment(alignment)
                     .setTextDirection(textDirection)
                     .setLineSpacing(0f, 1.1f)
@@ -105,11 +106,12 @@ object WidgetTextRenderer {
                     .build()
             } else {
                 @Suppress("DEPRECATION")
-                StaticLayout(title, titlePaint, width, alignment, 1.1f, 0f, true)
+                StaticLayout(spannedTitle, titlePaint, width, alignment, 1.1f, 0f, true)
             }
         }
 
         // Body Setup
+        val spannedBody = com.example.ui.components.RichTextHelper.htmlToSpanned(body)
         val bodyPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
             textSize = config.fontSize * scaledDensity
@@ -127,7 +129,7 @@ object WidgetTextRenderer {
         }
 
         val bodyLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            StaticLayout.Builder.obtain(body, 0, body.length, bodyPaint, width)
+            StaticLayout.Builder.obtain(spannedBody, 0, spannedBody.length, bodyPaint, width)
                 .setAlignment(alignment)
                 .setTextDirection(textDirection)
                 .setLineSpacing(0f, config.lineSpacing.coerceIn(0.8f, 2.5f))
@@ -135,7 +137,7 @@ object WidgetTextRenderer {
                 .build()
         } else {
             @Suppress("DEPRECATION")
-            StaticLayout(body, bodyPaint, width, alignment, config.lineSpacing, 0f, true)
+            StaticLayout(spannedBody, bodyPaint, width, alignment, config.lineSpacing, 0f, true)
         }
 
         val spacingBetween = if (titleLayout != null) (8 * density).toInt() else 0

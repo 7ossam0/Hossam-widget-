@@ -429,6 +429,24 @@ private fun TypographyTab(
                     label = { Text("سطر سفلي") }
                 )
             }
+
+            HorizontalDivider()
+
+            Text("تباعد الأسطر (Line Spacing: ${String.format(java.util.Locale.US, "%.1f", config.lineSpacing)}x)", fontWeight = FontWeight.Bold)
+            Slider(
+                value = config.lineSpacing,
+                onValueChange = { onUpdateConfig(config.copy(lineSpacing = it)) },
+                valueRange = 0.9f..2.5f,
+                steps = 15
+            )
+
+            Text("تباعد الحروف (Letter Spacing: ${String.format(java.util.Locale.US, "%.1f", config.letterSpacing)})", fontWeight = FontWeight.Bold)
+            Slider(
+                value = config.letterSpacing,
+                onValueChange = { onUpdateConfig(config.copy(letterSpacing = it)) },
+                valueRange = -1.0f..3.0f,
+                steps = 8
+            )
         }
     }
 }

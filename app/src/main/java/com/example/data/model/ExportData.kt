@@ -19,6 +19,7 @@ data class ContentItemDto(
     val sortOrder: Int,
     val isActive: Boolean,
     val isFavorite: Boolean,
+    val repeatCount: Int = 1,
     val createdAt: Long,
     val updatedAt: Long
 )

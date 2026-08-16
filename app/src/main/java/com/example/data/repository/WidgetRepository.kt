@@ -150,7 +150,7 @@ class WidgetRepository(private val context: Context) {
             CategoryDto(it.id, it.name, it.sortOrder, it.colorHex)
         }
         val items = contentItemDao.getAllContentItemsList().map {
-            ContentItemDto(it.id, it.title, it.body, it.categoryId, it.sortOrder, it.isActive, it.isFavorite, it.createdAt, it.updatedAt)
+            ContentItemDto(it.id, it.title, it.body, it.categoryId, it.sortOrder, it.isActive, it.isFavorite, it.repeatCount, it.createdAt, it.updatedAt)
         }
         val configs = widgetConfigDao.getAllWidgetConfigsList().map {
             WidgetConfigDto(
@@ -188,7 +188,7 @@ class WidgetRepository(private val context: Context) {
                 CategoryEntity(it.id, it.name, it.sortOrder, it.colorHex)
             }
             val newItems = exportData.contentItems.map {
-                ContentItemEntity(it.id, it.title, it.body, it.categoryId, it.sortOrder, it.isActive, it.isFavorite, it.createdAt, it.updatedAt)
+                ContentItemEntity(it.id, it.title, it.body, it.categoryId, it.sortOrder, it.isActive, it.isFavorite, it.repeatCount, it.createdAt, it.updatedAt)
             }
             val newConfigs = exportData.widgetConfigs.map {
                 WidgetConfigEntity(

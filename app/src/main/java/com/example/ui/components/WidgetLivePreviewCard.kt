@@ -223,8 +223,13 @@ fun WidgetLivePreviewCard(
                             }
                         ) {
                             if (item.title.isNotBlank() && config.showTitle) {
+                                val annotatedTitle = RichTextHelper.htmlToAnnotatedString(
+                                    htmlText = item.title,
+                                    defaultColor = titleColor,
+                                    defaultFontSize = (config.fontSize - 1).coerceAtLeast(10).sp
+                                )
                                 Text(
-                                    text = item.title,
+                                    text = annotatedTitle,
                                     color = titleColor,
                                     fontSize = (config.fontSize - 1).coerceAtLeast(10).sp,
                                     fontWeight = FontWeight.Bold,
@@ -232,8 +237,13 @@ fun WidgetLivePreviewCard(
                                     fontFamily = selectedFontFamily
                                 )
                             }
+                            val annotatedBody = RichTextHelper.htmlToAnnotatedString(
+                                htmlText = item.body,
+                                defaultColor = textColor,
+                                defaultFontSize = config.fontSize.sp
+                            )
                             Text(
-                                text = item.body,
+                                text = annotatedBody,
                                 color = textColor,
                                 fontSize = config.fontSize.sp,
                                 fontWeight = textFontWeight,
