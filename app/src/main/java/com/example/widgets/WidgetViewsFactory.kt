@@ -91,36 +91,31 @@ class WidgetViewsFactory(
 
         val views = RemoteViews(context.packageName, R.layout.widget_list_item)
 
-        val hasCustomFont = !currentConfig.customFontPath.isNullOrBlank()
+        // Always render via WidgetTextRenderer for 100% pixel-perfect match with in-app Live Preview
+        try {
+            val displayMetrics = context.resources.displayMetrics
+            val density = displayMetrics.density
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val options = try { appWidgetManager.getAppWidgetOptions(appWidgetId) } catch (e: Exception) { null }
+            val minWidthDp = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)?.takeIf { it > 0 }
+                ?: ((displayMetrics.widthPixels / density).toInt() - 32)
+            val paddingPx = (currentConfig.padding * 2 * density).toInt() + (12 * density).toInt()
+            val targetWidth = ((minWidthDp * density) - paddingPx).toInt().coerceIn(240, displayMetrics.widthPixels)
 
-        if (hasCustomFont) {
-            // Render custom font file via StaticLayout Bitmap at EXACT widget width
-            try {
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-                val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 260).coerceAtLeast(100)
-                val density = context.resources.displayMetrics.density
-                val paddingPx = (currentConfig.padding * 2 * density).toInt()
-                val targetWidth = (minWidthDp * density - paddingPx).toInt().coerceIn(200, 1200)
+            val renderedBitmap = WidgetTextRenderer.renderContentItem(
+                context = context,
+                title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
+                body = item.body,
+                config = currentConfig,
+                targetWidthPx = targetWidth
+            )
 
-                val renderedBitmap = WidgetTextRenderer.renderContentItem(
-                    context = context,
-                    title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
-                    body = item.body,
-                    config = currentConfig,
-                    targetWidthPx = targetWidth
-                )
-
-                views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
-                views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
-                views.setViewVisibility(R.id.item_title, android.view.View.GONE)
-                views.setViewVisibility(R.id.item_body, android.view.View.GONE)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                renderNativeTextViews(views, item, currentConfig)
-            }
-        } else {
-            // Render crisp, native subpixel TextViews with full rich-text Spans
+            views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
+            views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
+            views.setViewVisibility(R.id.item_title, android.view.View.GONE)
+            views.setViewVisibility(R.id.item_body, android.view.View.GONE)
+        } catch (e: Throwable) {
+            e.printStackTrace()
             renderNativeTextViews(views, item, currentConfig)
         }
 

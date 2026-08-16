@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +32,8 @@ fun GranularRichTextEditorToolbar(
     modifier: Modifier = Modifier
 ) {
     var activeSubMenu by remember { mutableStateOf<GranularSubMenu?>(null) }
+
+    var showTemplateDialog by remember { mutableStateOf(false) }
 
     // Curated rich color palette
     val textColors = listOf(
@@ -80,6 +83,52 @@ fun GranularRichTextEditorToolbar(
         "<big>" to "</big>" to "كبير (1.25x)",
         "<big><big>" to "</big></big>" to "كبير جداً (1.5x)",
         "<big><big><big>" to "</big></big></big>" to "ضخم مميز (1.8x)"
+    )
+
+    // Ready-made Formatting Presets
+    val formattingPresets = listOf(
+        FormattingPreset(
+            id = "quran_gold",
+            title = "آية قرآنية مذهبة",
+            description = "أقواس المصحف بلون ذهبي وخط غامق",
+            template = "﴿ <font color=\"#F59E0B\"><b>{text}</b></font> ﴾",
+            defaultPlaceholder = "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ"
+        ),
+        FormattingPreset(
+            id = "hadith_green",
+            title = "حديث شريف مع السند",
+            description = "أقواس تنصيص بلون زمردي مع تخريج سفلي",
+            template = "« <font color=\"#10B981\"><b>{text}</b></font> » <small><font color=\"#94A3B8\">[رواه البخاري]</font></small>",
+            defaultPlaceholder = "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ"
+        ),
+        FormattingPreset(
+            id = "dhikr_counter",
+            title = "ذكر وتسبيح مع العداد",
+            description = "نص ملون مع عداد مظلل أصفر بارز",
+            template = "<b><font color=\"#0284C7\">{text}</font></b> <mark style=\"background-color:#FEF08A\"><font color=\"#D97706\"><b>33×</b></font></mark>",
+            defaultPlaceholder = "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ"
+        ),
+        FormattingPreset(
+            id = "duaa_blessing",
+            title = "دعاء مع البسملة والصلاة",
+            description = "بسملة كهرمانية ودعاء متبوع بـ ﷺ",
+            template = "<font color=\"#D97706\"><b>بِسْمِ اللَّـهِ الرَّحْمَـٰنِ الرَّحِيمِ</b></font><br/>{text} <font color=\"#10B981\">ﷺ</font>",
+            defaultPlaceholder = "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ"
+        ),
+        FormattingPreset(
+            id = "highlight_quote",
+            title = "اقتباس مظلل لافت",
+            description = "خلفية صفراء بارزة مع خط أسود عريض",
+            template = "<span style=\"background-color:#FEF08A\"><font color=\"#1E293B\"><b>« {text} »</b></font></span>",
+            defaultPlaceholder = "مَن سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ"
+        ),
+        FormattingPreset(
+            id = "title_bullet_points",
+            title = "عنوان بارز مع نقاط",
+            description = "عنوان بلون ذهبي كبير ونقاط فرعية ملونة",
+            template = "<big><font color=\"#F59E0B\"><b>★ {text}</b></font></big><br/>• <font color=\"#10B981\">النقطة الأولى...</font><br/>• <font color=\"#10B981\">النقطة الثانية...</font>",
+            defaultPlaceholder = "فضل أذكار الصباح والمساء"
+        )
     )
 
     Surface(
@@ -226,7 +275,28 @@ fun GranularRichTextEditorToolbar(
                     }
                 )
 
-                // 9. Quran Brackets Direct Shortcut
+                // 9. Presets & Ready Templates
+                ToolbarIconButton(
+                    label = "✨",
+                    contentDescription = "قوالب تنسيق جاهزة",
+                    isActive = activeSubMenu == GranularSubMenu.PRESETS,
+                    onClick = {
+                        activeSubMenu = if (activeSubMenu == GranularSubMenu.PRESETS) null else GranularSubMenu.PRESETS
+                    }
+                )
+
+                // 10. Advanced Code & Template Composer Dialog
+                ToolbarIconButton(
+                    icon = Icons.Default.Code,
+                    contentDescription = "إدراج نص داخل كود جاهز",
+                    onClick = {
+                        showTemplateDialog = true
+                    }
+                )
+
+                VerticalDivider(modifier = Modifier.height(26.dp).padding(horizontal = 2.dp))
+
+                // 11. Quran Brackets Direct Shortcut
                 ToolbarButton(
                     text = "﴿ ﴾",
                     contentDescription = "أقواس الآيات القرآنية",
@@ -235,7 +305,7 @@ fun GranularRichTextEditorToolbar(
                     }
                 )
 
-                // 10. Quote Brackets
+                // 12. Quote Brackets
                 ToolbarButton(
                     text = "« »",
                     contentDescription = "أقواس التنصيص",
@@ -246,7 +316,7 @@ fun GranularRichTextEditorToolbar(
 
                 VerticalDivider(modifier = Modifier.height(26.dp).padding(horizontal = 2.dp))
 
-                // 11. Clear Formatting
+                // 13. Clear Formatting
                 ToolbarIconButton(
                     icon = Icons.Default.FormatClear,
                     contentDescription = "إزالة التنسيق عن المحدد",
@@ -418,17 +488,196 @@ fun GranularRichTextEditorToolbar(
                                 }
                             }
 
+                            GranularSubMenu.PRESETS -> {
+                                Text(
+                                    text = "اختر قالب تنسيق جاهز (سيتم تطبيق التنسيق على النص المحدد أو إدراجه فوراً):",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    formattingPresets.forEach { preset ->
+                                        Surface(
+                                            onClick = {
+                                                val selectedText = textFieldValue.getSelectedText().text
+                                                val contentToInsert = if (selectedText.isNotEmpty()) {
+                                                    preset.template.replace("{text}", selectedText)
+                                                } else {
+                                                    preset.template.replace("{text}", preset.defaultPlaceholder)
+                                                }
+                                                onValueChange(RichTextHelper.insertTextAtCursor(textFieldValue, contentToInsert))
+                                                activeSubMenu = null
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                        ) {
+                                            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                                Text(preset.title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                Text(preset.description, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             null -> {}
                         }
                     }
                 }
             }
+
+            // Dialog for inserting custom text inside ready-made formatting template
+            if (showTemplateDialog) {
+                PresetTemplateComposerDialog(
+                    presets = formattingPresets,
+                    initialText = textFieldValue.getSelectedText().text,
+                    onDismiss = { showTemplateDialog = false },
+                    onInsert = { formattedCode ->
+                        onValueChange(RichTextHelper.insertTextAtCursor(textFieldValue, formattedCode))
+                        showTemplateDialog = false
+                    }
+                )
+            }
         }
     }
 }
 
+data class FormattingPreset(
+    val id: String,
+    val title: String,
+    val description: String,
+    val template: String,
+    val defaultPlaceholder: String
+)
+
 private enum class GranularSubMenu {
-    SIZING, TEXT_COLOR, HIGHLIGHT, ISLAMIC
+    SIZING, TEXT_COLOR, HIGHLIGHT, ISLAMIC, PRESETS
+}
+
+@Composable
+fun PresetTemplateComposerDialog(
+    presets: List<FormattingPreset>,
+    initialText: String,
+    onDismiss: () -> Unit,
+    onInsert: (String) -> Unit
+) {
+    var selectedPreset by remember { mutableStateOf(presets.first()) }
+    var userCustomText by remember { mutableStateOf(if (initialText.isNotBlank()) initialText else selectedPreset.defaultPlaceholder) }
+    var selectedColorHex by remember { mutableStateOf("#F59E0B") }
+
+    val formattedResult = remember(selectedPreset, userCustomText, selectedColorHex) {
+        val targetText = if (userCustomText.isNotBlank()) userCustomText else selectedPreset.defaultPlaceholder
+        selectedPreset.template.replace("{text}", targetText)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFF59E0B))
+                Text("إضافة نص داخل كود تنسيق جاهز", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("1. اختر نوع قالب التنسيق:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    presets.forEach { preset ->
+                        FilterChip(
+                            selected = selectedPreset.id == preset.id,
+                            onClick = {
+                                selectedPreset = preset
+                                if (userCustomText.isBlank() || presets.any { it.defaultPlaceholder == userCustomText }) {
+                                    userCustomText = preset.defaultPlaceholder
+                                }
+                            },
+                            label = { Text(preset.title, fontSize = 11.sp) }
+                        )
+                    }
+                }
+
+                Text("2. اكتب أو الصق النص المراد وضعه داخل القالب:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+
+                OutlinedTextField(
+                    value = userCustomText,
+                    onValueChange = { userCustomText = it },
+                    label = { Text("النص المطلوب تنسيقه") },
+                    minLines = 3,
+                    maxLines = 6,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text("3. معاينة شكل النص بالتنسيق المختار:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp)
+                ) {
+                    Box(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = RichTextHelper.htmlToAnnotatedString(formattedResult),
+                            fontSize = 14.sp,
+                            lineHeight = 22.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                // Show raw generated code preview
+                Surface(
+                    color = Color(0xFF0F172A),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = formattedResult,
+                        fontSize = 10.sp,
+                        color = Color(0xFF38BDF8),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onInsert(formattedResult) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("إدراج في المحتوى")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إلغاء")
+            }
+        }
+    )
 }
 
 @Composable
