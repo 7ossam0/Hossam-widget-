@@ -6,6 +6,7 @@ import android.text.Spanned
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
+import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import androidx.compose.ui.graphics.Color
@@ -120,6 +121,9 @@ object RichTextHelper {
                         }
                         is UnderlineSpan -> {
                             addStyle(SpanStyle(textDecoration = TextDecoration.Underline), start, end)
+                        }
+                        is StrikethroughSpan -> {
+                            addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough), start, end)
                         }
                         is ForegroundColorSpan -> {
                             val composeColor = Color(span.foregroundColor)

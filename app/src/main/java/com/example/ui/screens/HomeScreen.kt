@@ -63,13 +63,51 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("استوديو الودجت - Widget Studio", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = { viewModel.triggerWidgetRefreshBroadcast() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "تحديث الكل")
+            CenterAlignedTopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Widgets,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Column {
+                            Text(
+                                "استوديو الودجت",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Widget Studio Pro",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
-                }
+                },
+                actions = {
+                    FilledTonalIconButton(
+                        onClick = { viewModel.triggerWidgetRefreshBroadcast() },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "تحديث الكل", modifier = Modifier.size(20.dp))
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -77,7 +115,9 @@ fun HomeScreen(
             ExtendedFloatingActionButton(
                 onClick = { showCreateDialog = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("إنشاء ودجت جديد") }
+                text = { Text("إنشاء ودجت جديد", fontWeight = FontWeight.Bold) },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         }
     ) { paddingValues ->
@@ -94,15 +134,16 @@ fun HomeScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .padding(top = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                    )
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -111,39 +152,53 @@ fun HomeScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
-                                    shape = RoundedCornerShape(10.dp),
+                                    shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(38.dp)
+                                    modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             Icons.Default.Person,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.size(22.dp)
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
                                         text = "المصمم والمطور: حسام أحمد",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "مصر (+20) 01285610761",
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    text = "دعم مباشر",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
 
                         Text(
-                            text = "لطلب أي تعديلات أو استفسارات حول ودجت الأذكار والنصوص يمكنك التواصل المباشر عبر واتساب:",
-                            fontSize = 11.sp,
+                            text = "لطلب أي تصاميم إضافية أو مقترحات مخصصة للأذكار والودجت، تواصل معي مباشرة:",
+                            fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
@@ -169,11 +224,11 @@ fun HomeScreen(
                                     containerColor = Color(0xFF25D366),
                                     contentColor = Color.White
                                 ),
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("تواصل عبر واتساب (+20)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("تواصل واتساب (+20)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
 
                             FilledTonalIconButton(
@@ -182,7 +237,8 @@ fun HomeScreen(
                                     val clip = ClipData.newPlainText("WhatsApp Number", "+201285610761")
                                     clipboard.setPrimaryClip(clip)
                                 },
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Icon(Icons.Default.ContentCopy, contentDescription = "نسخ الرقم")
                             }
@@ -191,58 +247,91 @@ fun HomeScreen(
                 }
             }
 
-            // Navigation Hub Cards
+            // Navigation Hub Cards (3 High-UX Action Tiles)
             item {
                 Text(
-                    text = "إدارة المحتوى والنظام",
+                    text = "أقسام الإدارة والتحكم",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ElevatedCard(
+                    Card(
                         onClick = onNavigateToContent,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
                         Column(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.Article, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("محتوى الودجت", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Article, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("المحتوى والأذكار", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
-                    ElevatedCard(
+                    Card(
                         onClick = onNavigateToCategories,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
                         Column(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("التصنيفات", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("التصنيفات", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
-                    ElevatedCard(
+                    Card(
                         onClick = onNavigateToBackup,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
                         Column(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.Backup, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("النسخ الاحتياطي", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Backup, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("النسخ الاحتياطي", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

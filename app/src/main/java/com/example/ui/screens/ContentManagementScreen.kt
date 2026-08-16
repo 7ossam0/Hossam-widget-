@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CategoryEntity
 import com.example.data.model.ContentItemEntity
-import com.example.ui.components.RichTextEditorToolbar
+import com.example.ui.components.GranularRichTextEditorToolbar
 import com.example.ui.components.RichTextHelper
 import com.example.viewmodel.MainViewModel
 
@@ -347,8 +347,8 @@ private fun AddEditContentDialog(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Interactive Rich Text Formatting Toolbar
-                RichTextEditorToolbar(
+                // Interactive Rich Text Formatting Toolbar with Granular Controls
+                GranularRichTextEditorToolbar(
                     textFieldValue = bodyFieldValue,
                     onValueChange = { bodyFieldValue = it }
                 )

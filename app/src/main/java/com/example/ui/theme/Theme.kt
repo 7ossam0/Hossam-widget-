@@ -9,28 +9,33 @@ import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = GoldAccent,
-    onPrimary = Color.Black,
-    primaryContainer = SlateCard,
-    onPrimaryContainer = Color.White,
+    onPrimary = Color(0xFF1E1B4B),
+    primaryContainer = Color(0xFF2E230B),
+    onPrimaryContainer = GoldLight,
     secondary = TealAccent,
-    onSecondary = Color.Black,
+    onSecondary = Color(0xFF022C22),
+    secondaryContainer = Color(0xFF064E3B),
+    onSecondaryContainer = Color(0xFFA7F3D0),
     tertiary = BlueAccent,
     background = DarkNavy,
     onBackground = Color(0xFFF1F5F9),
-    surface = SlateCard,
+    surface = DarkSurface,
     onSurface = Color(0xFFF8FAFC),
-    surfaceVariant = Color(0xFF334155),
+    surfaceVariant = Color(0xFF1E293B),
     onSurfaceVariant = Color(0xFFCBD5E1),
-    outline = SlateBorder
+    outline = SlateBorder,
+    outlineVariant = Color(0xFF1E293B)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFFD97706),
+    primary = AmberWarm,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFFEF3C7),
     onPrimaryContainer = Color(0xFF78350F),
-    secondary = TealAccent,
+    secondary = EmeraldPrimary,
     onSecondary = Color.White,
+    secondaryContainer = EmeraldContainer,
+    onSecondaryContainer = Color(0xFF065F46),
     tertiary = BlueAccent,
     background = LightBackground,
     onBackground = DarkText,
@@ -38,7 +43,8 @@ private val LightColorScheme = lightColorScheme(
     onSurface = DarkText,
     surfaceVariant = Color(0xFFF1F5F9),
     onSurfaceVariant = MutedText,
-    outline = LightBorder
+    outline = LightBorder,
+    outlineVariant = Color(0xFFE2E8F0)
 )
 
 @Composable
