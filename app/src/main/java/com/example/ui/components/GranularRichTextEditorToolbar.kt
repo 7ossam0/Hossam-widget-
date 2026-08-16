@@ -76,6 +76,13 @@ fun GranularRichTextEditorToolbar(
         "بسم الله الرحمن الرحيم" to "البسملة كاملة"
     )
 
+    // Direction / Alignment options
+    val alignments = listOf(
+        "<div align=\"right\">" to "</div>" to "محاذاة يمين (Right)",
+        "<div align=\"center\">" to "</div>" to "محاذاة وسط (Center)",
+        "<div align=\"left\">" to "</div>" to "محاذاة يسار (Left)"
+    )
+
     // Granular Font Sizes
     val fontSizes = listOf(
         "<small><small>" to "</small></small>" to "صغير جداً (0.6x)",
@@ -241,7 +248,17 @@ fun GranularRichTextEditorToolbar(
                     }
                 )
 
-                // 6. Word Color Palette
+                // 6. Section Alignment / Direction
+                ToolbarIconButton(
+                    icon = Icons.Default.FormatAlignCenter,
+                    contentDescription = "محاذاة واتجاه النص المحدد",
+                    isActive = activeSubMenu == GranularSubMenu.ALIGNMENT,
+                    onClick = {
+                        activeSubMenu = if (activeSubMenu == GranularSubMenu.ALIGNMENT) null else GranularSubMenu.ALIGNMENT
+                    }
+                )
+
+                // 7. Word Color Palette
                 ToolbarIconButton(
                     icon = Icons.Default.Palette,
                     contentDescription = "لون الكلمة المحددة",
@@ -488,6 +505,32 @@ fun GranularRichTextEditorToolbar(
                                 }
                             }
 
+                            GranularSubMenu.ALIGNMENT -> {
+                                Text(
+                                    text = "محاذاة واتجاه النص أو السطر المحدد:",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    alignments.forEach { (tags, label) ->
+                                        val (openTag, closeTag) = tags
+                                        SuggestionChip(
+                                            onClick = {
+                                                onValueChange(RichTextHelper.applyTagToSelection(textFieldValue, openTag, closeTag))
+                                                activeSubMenu = null
+                                            },
+                                            label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) }
+                                        )
+                                    }
+                                }
+                            }
+
                             GranularSubMenu.PRESETS -> {
                                 Text(
                                     text = "اختر قالب تنسيق جاهز (سيتم تطبيق التنسيق على النص المحدد أو إدراجه فوراً):",
@@ -557,7 +600,7 @@ data class FormattingPreset(
 )
 
 private enum class GranularSubMenu {
-    SIZING, TEXT_COLOR, HIGHLIGHT, ISLAMIC, PRESETS
+    SIZING, ALIGNMENT, TEXT_COLOR, HIGHLIGHT, ISLAMIC, PRESETS
 }
 
 @Composable

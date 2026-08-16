@@ -6,6 +6,7 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,8 +27,11 @@ import com.example.data.model.ContentItemEntity
 import com.example.data.model.CustomFontEntity
 import com.example.data.model.WidgetConfigEntity
 import com.example.ui.components.ColorPickerRow
+import com.example.ui.components.GranularRichTextEditorToolbar
+import com.example.ui.components.RichTextHelper
 import com.example.ui.components.WidgetLivePreviewCard
 import com.example.viewmodel.MainViewModel
+import androidx.compose.ui.text.input.TextFieldValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +67,8 @@ fun WidgetDesignerScreen(
         previewItems = viewModel.getItemsForWidget(config)
     }
 
-    var selectedTabIndex by remember { mutableIntStateOf(1) } // Default to Typography & Text styling tab
-    val tabs = listOf("المحتوى", "تنسيق النصوص", "الألوان", "الهيكل", "التناوب")
+    var selectedTabIndex by remember { mutableIntStateOf(0) } // Default to Content & Live Rich Text Styler tab
+    val tabs = listOf("المحتوى والتحرير الحر", "تنسيق الخطوط", "الألوان", "الهيكل", "التناوب")
 
     val scrollState = rememberScrollState()
 
@@ -156,11 +160,18 @@ fun WidgetDesignerScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(16.dp),
+                .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 when (selectedTabIndex) {
-                    0 -> ContentSourceTab(config, categories, contentItems) { config = it }
+                    0 -> ContentSourceAndLiveEditorTab(
+                        config = config,
+                        categories = categories,
+                        contentItems = contentItems,
+                        previewItems = previewItems,
+                        onUpdateItem = { viewModel.updateContentItem(it) },
+                        onUpdateConfig = { config = it }
+                    )
                     1 -> TypographyTab(
                         config = config,
                         customFonts = customFonts,
@@ -197,83 +208,267 @@ private fun getFileNameFromUri(context: Context, uri: Uri): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ContentSourceTab(
+private fun ContentSourceAndLiveEditorTab(
     config: WidgetConfigEntity,
     categories: List<CategoryEntity>,
     contentItems: List<ContentItemEntity>,
+    previewItems: List<ContentItemEntity>,
+    onUpdateItem: (ContentItemEntity) -> Unit,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("اسم الودجت", fontWeight = FontWeight.Bold)
-            OutlinedTextField(
-                value = config.name,
-                onValueChange = { onUpdateConfig(config.copy(name = it)) },
-                label = { Text("عنوان الودجت") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+    // Determine active item to edit in place
+    val activeItem = remember(previewItems, config.currentContentIndex, config.singleContentId) {
+        if (previewItems.isNotEmpty()) {
+            val safeIdx = (config.currentContentIndex % previewItems.size).let { if (it < 0) it + previewItems.size else it }
+            previewItems[safeIdx]
+        } else if (config.singleContentId != null) {
+            contentItems.find { it.id == config.singleContentId }
+        } else {
+            contentItems.firstOrNull()
+        }
+    }
 
-            Text("مصدر المحتوى", fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = config.contentMode == "CATEGORY_ALL",
-                    onClick = { onUpdateConfig(config.copy(contentMode = "CATEGORY_ALL")) },
-                    label = { Text("تصنيف كامل") }
-                )
-                FilterChip(
-                    selected = config.contentMode == "SINGLE",
-                    onClick = { onUpdateConfig(config.copy(contentMode = "SINGLE")) },
-                    label = { Text("نص واحد ثابت") }
-                )
-            }
+    var selectedItemForEdit by remember { mutableStateOf<ContentItemEntity?>(null) }
 
-            if (config.contentMode == "CATEGORY_ALL") {
-                Text("اختر التصنيف", fontWeight = FontWeight.Bold)
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(
-                        selected = config.categoryId == null,
-                        onClick = { onUpdateConfig(config.copy(categoryId = null)) },
-                        label = { Text("جميع التصنيفات") }
-                    )
-                    categories.forEach { cat ->
-                        FilterChip(
-                            selected = config.categoryId == cat.id,
-                            onClick = { onUpdateConfig(config.copy(categoryId = cat.id)) },
-                            label = { Text(cat.name) }
+    LaunchedEffect(activeItem) {
+        if (selectedItemForEdit == null || selectedItemForEdit?.id != activeItem?.id) {
+            selectedItemForEdit = activeItem
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        
+        // --- 1. Live In-Place Granular Text Designer Section ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("التحرير والتصميم الحر للنص المعروض", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "معاينة وتعديل فوري ⚡",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
                     }
                 }
-            }
 
-            if (config.contentMode == "SINGLE") {
-                Text("اختر النص المحدد", fontWeight = FontWeight.Bold)
-                val currentSingleItem = contentItems.find { it.id == config.singleContentId }
                 Text(
-                    text = currentSingleItem?.title?.ifEmpty { currentSingleItem.body } ?: "لم يتم اختيار نص",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    text = "حدد أي كلمة أو سطر بالأسفل لتغيير لونه أو حجمه أو اتجاهه أو تمييزه بحرية تامة دون التأثير على باقي النص:",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 200.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    contentItems.forEach { item ->
-                        val isSelected = config.singleContentId == item.id
-                        ListItem(
-                            headlineContent = { Text(item.title.ifEmpty { item.body.take(30) + "..." }, fontSize = 12.sp) },
-                            leadingContent = {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) }
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                // Quick Item Switcher if multiple items exist
+                if (previewItems.size > 1) {
+                    Text("اختر النص للتعديل السريع:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        previewItems.forEachIndexed { index, item ->
+                            val isCurrent = selectedItemForEdit?.id == item.id
+                            FilterChip(
+                                selected = isCurrent,
+                                onClick = {
+                                    selectedItemForEdit = item
+                                    onUpdateConfig(config.copy(currentContentIndex = index))
+                                },
+                                label = {
+                                    Text(
+                                        text = item.title.ifEmpty { "نص #${index + 1}" },
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // In-place Item Editor Form
+                selectedItemForEdit?.let { currentItem ->
+                    var titleText by remember(currentItem.id) { mutableStateOf(currentItem.title) }
+                    var bodyTextFieldValue by remember(currentItem.id) { mutableStateOf(TextFieldValue(currentItem.body)) }
+                    var hasSavedFeedback by remember { mutableStateOf(false) }
+
+                    // Title Field
+                    OutlinedTextField(
+                        value = titleText,
+                        onValueChange = { newTitle ->
+                            titleText = newTitle
+                            val updated = currentItem.copy(title = newTitle)
+                            selectedItemForEdit = updated
+                            onUpdateItem(updated)
+                        },
+                        label = { Text("عنوان النص الفرعي (Title)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Body Field with Rich Text Editor
+                    Text("نص المحتوى (تحديد الكلمات للتنسيق المباشر):", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    OutlinedTextField(
+                        value = bodyTextFieldValue,
+                        onValueChange = { newBodyVal ->
+                            bodyTextFieldValue = newBodyVal
+                            val updated = currentItem.copy(body = newBodyVal.text)
+                            selectedItemForEdit = updated
+                            onUpdateItem(updated)
+                        },
+                        label = { Text("محتوى النص / الدعاء / الذكر") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp, max = 220.dp)
+                    )
+
+                    // Rich Text Granular Toolbar attached directly under the body editor
+                    GranularRichTextEditorToolbar(
+                        textFieldValue = bodyTextFieldValue,
+                        onValueChange = { newBodyVal ->
+                            bodyTextFieldValue = newBodyVal
+                            val updated = currentItem.copy(body = newBodyVal.text)
+                            selectedItemForEdit = updated
+                            onUpdateItem(updated)
+                        }
+                    )
+
+                    // Save and Confirm Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (hasSavedFeedback) {
+                            Text(
+                                "✓ تم تطبيق وحفظ التعديلات على الودجت بنجاح",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+
+                        Button(
+                            onClick = {
+                                val updated = currentItem.copy(title = titleText, body = bodyTextFieldValue.text)
+                                onUpdateItem(updated)
+                                hasSavedFeedback = true
+                            }
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("حفظ تعديل هذا النص", fontSize = 12.sp)
+                        }
+                    }
+                } ?: run {
+                    Text(
+                        "لا يوجد نص محدد حالياً، يرجى اختيار تصنيف أو إضافة نصوص من شاشة المحتوى والأذكار.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        // --- 2. Widget Source Settings (Category / Single Content Mode) ---
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("إعدادات مصدر الودجت والاسم العام", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                
+                OutlinedTextField(
+                    value = config.name,
+                    onValueChange = { onUpdateConfig(config.copy(name = it)) },
+                    label = { Text("اسم الودجت في القائمة") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text("نمط عرض المحتوى", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = config.contentMode == "CATEGORY_ALL",
+                        onClick = { onUpdateConfig(config.copy(contentMode = "CATEGORY_ALL")) },
+                        label = { Text("تصنيف كامل (تناوب)") }
+                    )
+                    FilterChip(
+                        selected = config.contentMode == "SINGLE",
+                        onClick = { onUpdateConfig(config.copy(contentMode = "SINGLE")) },
+                        label = { Text("نص واحد ثابت") }
+                    )
+                }
+
+                if (config.contentMode == "CATEGORY_ALL") {
+                    Text("اختر التصنيف المخصص للودجت", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FilterChip(
+                            selected = config.categoryId == null,
+                            onClick = { onUpdateConfig(config.copy(categoryId = null)) },
+                            label = { Text("جميع التصنيفات") }
                         )
+                        categories.forEach { cat ->
+                            FilterChip(
+                                selected = config.categoryId == cat.id,
+                                onClick = { onUpdateConfig(config.copy(categoryId = cat.id)) },
+                                label = { Text(cat.name) }
+                            )
+                        }
+                    }
+                }
+
+                if (config.contentMode == "SINGLE") {
+                    Text("اختر النص الثابت من القائمة", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    val currentSingleItem = contentItems.find { it.id == config.singleContentId }
+                    Text(
+                        text = currentSingleItem?.title?.ifEmpty { currentSingleItem.body } ?: "لم يتم اختيار نص بعد",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 160.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        contentItems.forEach { item ->
+                            val isSelected = config.singleContentId == item.id
+                            ListItem(
+                                headlineContent = { Text(item.title.ifEmpty { item.body.take(30) + "..." }, fontSize = 12.sp) },
+                                leadingContent = {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) }
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
