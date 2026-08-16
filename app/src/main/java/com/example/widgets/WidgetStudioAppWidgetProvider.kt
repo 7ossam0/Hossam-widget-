@@ -129,17 +129,30 @@ class WidgetStudioAppWidgetProvider : AppWidgetProvider() {
             val currentConfig = config ?: WidgetConfigEntity(appWidgetId = appWidgetId)
             val views = RemoteViews(context.packageName, R.layout.widget_scrollable_layout)
 
-            // Apply Background Color & Transparency (Opacity)
+            // Render High-Fidelity Background (Gradients, Opacity, Rounded Corners, Borders)
             try {
-                val parsedBgColor = Color.parseColor(currentConfig.backgroundColorHex)
-                val alpha = (currentConfig.backgroundOpacity * 255).toInt().coerceIn(0, 255)
-                val argbColor = Color.argb(
-                    alpha,
-                    Color.red(parsedBgColor),
-                    Color.green(parsedBgColor),
-                    Color.blue(parsedBgColor)
+                val density = context.resources.displayMetrics.density
+                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+                val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 240).coerceAtLeast(100)
+                val minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 160).coerceAtLeast(100)
+                val widthPx = (minWidthDp * density).toInt().coerceIn(200, 1400)
+                val heightPx = (minHeightDp * density).toInt().coerceIn(150, 1400)
+
+                val bgBitmap = WidgetTextRenderer.renderWidgetBackground(
+                    context = context,
+                    config = currentConfig,
+                    widthPx = widthPx,
+                    heightPx = heightPx
                 )
-                views.setInt(R.id.widget_container, "setBackgroundColor", argbColor)
+                views.setImageViewBitmap(R.id.widget_background_image, bgBitmap)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // Set dynamic padding matching Live Preview
+            try {
+                val padPx = (currentConfig.padding * context.resources.displayMetrics.density).toInt()
+                views.setViewPadding(R.id.widget_container, padPx, padPx, padPx, padPx)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

@@ -28,12 +28,17 @@ import java.util.regex.Pattern
 object RichTextHelper {
 
     /**
-     * Converts HTML-formatted string to Android Spanned for StaticLayout / Canvas rendering in Widgets.
+     * Converts HTML-formatted string to Android Spanned for StaticLayout / Canvas / RemoteViews rendering.
      */
-    fun htmlToSpanned(htmlText: String): CharSequence {
+    fun htmlToSpanned(
+        htmlText: String,
+        baseIsBold: Boolean = false,
+        baseIsItalic: Boolean = false,
+        baseIsUnderline: Boolean = false
+    ): CharSequence {
         if (htmlText.isBlank()) return ""
         val spanned = try {
-            // First process custom style spans (like background-color) if present
+            // First process custom style spans (like background-color and mark tags)
             var processed = htmlText
                 .replace(Regex("<mark(?: style=\"background-color:\\s*([^\"]+)\")?>(.*?)</mark>", RegexOption.DOT_MATCHES_ALL)) { match ->
                     val color = match.groups[1]?.value ?: "#FEF08A"
@@ -43,7 +48,7 @@ object RichTextHelper {
             val baseSpanned = HtmlCompat.fromHtml(processed, HtmlCompat.FROM_HTML_MODE_LEGACY)
             val builder = SpannableStringBuilder(baseSpanned)
 
-            // Handle background colors with custom regex matcher over the raw html if needed
+            // Handle background colors with custom regex matcher over the raw html
             val spanPattern = Pattern.compile("<span style=\"background-color:\\s*([^\"]+)\">(.*?)</span>", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val matcher = spanPattern.matcher(htmlText)
             while (matcher.find()) {
@@ -66,6 +71,21 @@ object RichTextHelper {
                         }
                         start = rawStr.indexOf(innerText, start + innerText.length)
                     }
+                }
+            }
+
+            // Apply base widget typography if required
+            val len = builder.length
+            if (len > 0) {
+                if (baseIsBold && baseIsItalic) {
+                    builder.setSpan(StyleSpan(android.graphics.Typeface.BOLD_ITALIC), 0, len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                } else if (baseIsBold) {
+                    builder.setSpan(StyleSpan(android.graphics.Typeface.BOLD), 0, len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                } else if (baseIsItalic) {
+                    builder.setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                if (baseIsUnderline) {
+                    builder.setSpan(UnderlineSpan(), 0, len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             }
 

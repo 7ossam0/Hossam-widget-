@@ -91,25 +91,37 @@ class WidgetViewsFactory(
 
         val views = RemoteViews(context.packageName, R.layout.widget_list_item)
 
-        // Always render via high-fidelity Bitmap Renderer for 100% pixel-perfect match
-        try {
-            val displayMetrics = context.resources.displayMetrics
-            val targetWidth = (displayMetrics.widthPixels - (32 * displayMetrics.density).toInt()).coerceIn(340, 900)
-            val renderedBitmap = WidgetTextRenderer.renderContentItem(
-                context = context,
-                title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
-                body = item.body,
-                config = currentConfig,
-                targetWidthPx = targetWidth
-            )
+        val hasCustomFont = !currentConfig.customFontPath.isNullOrBlank()
 
-            views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
-            views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
-            views.setViewVisibility(R.id.item_title, android.view.View.GONE)
-            views.setViewVisibility(R.id.item_body, android.view.View.GONE)
-        } catch (e: Throwable) {
-            e.printStackTrace()
-            fallbackStandardTextView(views, item, currentConfig)
+        if (hasCustomFont) {
+            // Render custom font file via StaticLayout Bitmap at EXACT widget width
+            try {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+                val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 260).coerceAtLeast(100)
+                val density = context.resources.displayMetrics.density
+                val paddingPx = (currentConfig.padding * 2 * density).toInt()
+                val targetWidth = (minWidthDp * density - paddingPx).toInt().coerceIn(200, 1200)
+
+                val renderedBitmap = WidgetTextRenderer.renderContentItem(
+                    context = context,
+                    title = if (currentConfig.showTitle && item.title.isNotBlank()) item.title else null,
+                    body = item.body,
+                    config = currentConfig,
+                    targetWidthPx = targetWidth
+                )
+
+                views.setImageViewBitmap(R.id.item_rendered_image, renderedBitmap)
+                views.setViewVisibility(R.id.item_rendered_image, android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.item_title, android.view.View.GONE)
+                views.setViewVisibility(R.id.item_body, android.view.View.GONE)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                renderNativeTextViews(views, item, currentConfig)
+            }
+        } else {
+            // Render crisp, native subpixel TextViews with full rich-text Spans
+            renderNativeTextViews(views, item, currentConfig)
         }
 
         // Set fill intent for item click
@@ -122,7 +134,7 @@ class WidgetViewsFactory(
         return views
     }
 
-    private fun fallbackStandardTextView(
+    private fun renderNativeTextViews(
         views: RemoteViews,
         item: ContentItemEntity,
         currentConfig: WidgetConfigEntity
@@ -130,46 +142,37 @@ class WidgetViewsFactory(
         views.setViewVisibility(R.id.item_rendered_image, android.view.View.GONE)
 
         // Calculate Gravity based on alignment & RTL direction
-        val gravity = when (currentConfig.textAlignment) {
-            "RIGHT" -> if (currentConfig.directionRtl) {
-                android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
-            } else {
-                android.view.Gravity.RIGHT or android.view.Gravity.CENTER_VERTICAL
-            }
-            "LEFT" -> if (currentConfig.directionRtl) {
-                android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
-            } else {
-                android.view.Gravity.LEFT or android.view.Gravity.CENTER_VERTICAL
-            }
+        val titleGravity = when (currentConfig.titleAlignment) {
+            "RIGHT" -> android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+            "LEFT" -> android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
             else -> android.view.Gravity.CENTER
         }
 
-        views.setInt(R.id.item_title, "setGravity", gravity)
-        views.setInt(R.id.item_body, "setGravity", gravity)
-
-        // Alignment Span
-        val alignmentSpan = when (currentConfig.textAlignment) {
-            "CENTER" -> android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_CENTER)
-            "RIGHT" -> if (currentConfig.directionRtl) {
-                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_NORMAL)
-            } else {
-                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_OPPOSITE)
-            }
-            "LEFT" -> if (currentConfig.directionRtl) {
-                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_OPPOSITE)
-            } else {
-                android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_NORMAL)
-            }
-            else -> android.text.style.AlignmentSpan.Standard(android.text.Layout.Alignment.ALIGN_CENTER)
+        val bodyGravity = when (currentConfig.textAlignment) {
+            "RIGHT" -> android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+            "LEFT" -> android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
+            else -> android.view.Gravity.CENTER
         }
 
-        // Title
+        views.setInt(R.id.item_title, "setGravity", titleGravity)
+        views.setInt(R.id.item_body, "setGravity", bodyGravity)
+
+        // Title Rendering
         if (item.title.isNotBlank() && currentConfig.showTitle) {
             views.setViewVisibility(R.id.item_title, android.view.View.VISIBLE)
-            val titleSpannable = SpannableString(item.title)
-            titleSpannable.setSpan(alignmentSpan, 0, item.title.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            titleSpannable.setSpan(StyleSpan(android.graphics.Typeface.BOLD), 0, item.title.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            views.setTextViewText(R.id.item_title, titleSpannable)
+            val isTitleBold = currentConfig.titleFontWeight == "BOLD"
+            val titleSpanned = com.example.ui.components.RichTextHelper.htmlToSpanned(
+                htmlText = item.title,
+                baseIsBold = isTitleBold,
+                baseIsItalic = false,
+                baseIsUnderline = false
+            )
+            views.setTextViewText(R.id.item_title, titleSpanned)
+            views.setTextViewTextSize(
+                R.id.item_title,
+                android.util.TypedValue.COMPLEX_UNIT_SP,
+                currentConfig.titleFontSize.toFloat()
+            )
             try {
                 views.setTextColor(R.id.item_title, Color.parseColor(currentConfig.titleColorHex))
             } catch (e: Exception) {
@@ -179,38 +182,30 @@ class WidgetViewsFactory(
             views.setViewVisibility(R.id.item_title, android.view.View.GONE)
         }
 
-        // Body Text
-        val bodyText = item.body
-        val spannable = SpannableString(bodyText)
-        spannable.setSpan(alignmentSpan, 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-        if (currentConfig.isItalic && currentConfig.fontWeight == "BOLD") {
-            spannable.setSpan(StyleSpan(android.graphics.Typeface.BOLD_ITALIC), 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        } else if (currentConfig.fontWeight == "BOLD") {
-            spannable.setSpan(StyleSpan(android.graphics.Typeface.BOLD), 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        } else if (currentConfig.isItalic) {
-            spannable.setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-
-        if (currentConfig.isUnderline) {
-            spannable.setSpan(UnderlineSpan(), 0, bodyText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-
+        // Body Rendering with Full Granular HTML Support
         views.setViewVisibility(R.id.item_body, android.view.View.VISIBLE)
-        views.setTextViewText(R.id.item_body, spannable)
+        val isBodyBold = currentConfig.fontWeight == "BOLD"
+        val isBodyItalic = currentConfig.isItalic
+        val isBodyUnderline = currentConfig.isUnderline
+
+        val bodySpanned = com.example.ui.components.RichTextHelper.htmlToSpanned(
+            htmlText = item.body,
+            baseIsBold = isBodyBold,
+            baseIsItalic = isBodyItalic,
+            baseIsUnderline = isBodyUnderline
+        )
+
+        views.setTextViewText(R.id.item_body, bodySpanned)
+        views.setTextViewTextSize(
+            R.id.item_body,
+            android.util.TypedValue.COMPLEX_UNIT_SP,
+            currentConfig.fontSize.toFloat()
+        )
 
         try {
             views.setTextColor(R.id.item_body, Color.parseColor(currentConfig.textColorHex))
         } catch (e: Exception) {
             views.setTextColor(R.id.item_body, Color.WHITE)
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            try {
-                views.setTextViewTextSize(R.id.item_body, android.util.TypedValue.COMPLEX_UNIT_SP, currentConfig.fontSize.toFloat())
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            }
         }
     }
 

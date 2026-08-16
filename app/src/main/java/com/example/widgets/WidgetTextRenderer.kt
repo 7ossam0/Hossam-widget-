@@ -16,6 +16,90 @@ import java.io.File
 
 object WidgetTextRenderer {
 
+    fun renderWidgetBackground(
+        context: Context,
+        config: WidgetConfigEntity,
+        widthPx: Int,
+        heightPx: Int
+    ): Bitmap {
+        val width = widthPx.coerceAtLeast(100)
+        val height = heightPx.coerceAtLeast(100)
+        val density = context.resources.displayMetrics.density
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        val cornerRadius = (config.cornerRadius * density).coerceAtLeast(0f)
+        val borderWidth = (config.borderWidth * density).coerceAtLeast(0f)
+
+        // Parse colors
+        val bgColor = try { Color.parseColor(config.backgroundColorHex) } catch (e: Exception) { Color.parseColor("#1E293B") }
+        val startColor = try { Color.parseColor(config.gradientStartColorHex) } catch (e: Exception) { bgColor }
+        val endColor = try { Color.parseColor(config.gradientEndColorHex) } catch (e: Exception) { bgColor }
+        val borderColor = try { Color.parseColor(config.borderColorHex) } catch (e: Exception) { Color.parseColor("#33FFFFFF") }
+
+        val alpha = (config.backgroundOpacity.coerceIn(0f, 1f) * 255).toInt()
+
+        fun applyAlpha(color: Int, a: Int): Int {
+            return Color.argb(
+                (Color.alpha(color) * (a / 255f)).toInt().coerceIn(0, 255),
+                Color.red(color),
+                Color.green(color),
+                Color.blue(color)
+            )
+        }
+
+        val startColorWithAlpha = applyAlpha(startColor, alpha)
+        val endColorWithAlpha = applyAlpha(endColor, alpha)
+
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            shader = when (config.gradientDirection) {
+                "TOP_BOTTOM" -> android.graphics.LinearGradient(
+                    0f, 0f, 0f, height.toFloat(),
+                    startColorWithAlpha, endColorWithAlpha,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
+                "LEFT_RIGHT" -> android.graphics.LinearGradient(
+                    0f, 0f, width.toFloat(), 0f,
+                    startColorWithAlpha, endColorWithAlpha,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
+                "DIAGONAL" -> android.graphics.LinearGradient(
+                    0f, 0f, width.toFloat(), height.toFloat(),
+                    startColorWithAlpha, endColorWithAlpha,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
+                else -> {
+                    color = applyAlpha(bgColor, alpha)
+                    null
+                }
+            }
+        }
+
+        val rectF = android.graphics.RectF(
+            borderWidth / 2f,
+            borderWidth / 2f,
+            width.toFloat() - borderWidth / 2f,
+            height.toFloat() - borderWidth / 2f
+        )
+
+        // Draw background shape
+        canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, fillPaint)
+
+        // Draw border if width > 0
+        if (borderWidth > 0f) {
+            val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = borderWidth
+                color = borderColor
+            }
+            canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, strokePaint)
+        }
+
+        return bitmap
+    }
+
     fun getTypeface(config: WidgetConfigEntity, isBold: Boolean = false, isItalic: Boolean = false): Typeface {
         // 1. Try Custom Font File
         if (!config.customFontPath.isNullOrBlank()) {
