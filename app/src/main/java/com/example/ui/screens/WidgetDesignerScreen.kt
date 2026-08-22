@@ -5,7 +5,9 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -41,6 +43,7 @@ fun WidgetDesignerScreen(
     onBackClick: () -> Unit
 ) {
     var config by remember { mutableStateOf(initialConfig) }
+    var isPreviewExpanded by remember { mutableStateOf(true) }
 
     val categories by viewModel.categories.collectAsState()
     val contentItems by viewModel.contentItems.collectAsState()
@@ -118,6 +121,8 @@ fun WidgetDesignerScreen(
                 .fillMaxSize()
                 .background(Color(0xFF0D1117))
                 .padding(paddingValues)
+                .verticalScroll(scrollState)
+                .padding(bottom = 36.dp)
         ) {
             // Floating Neumorphic Live Preview Pod
             NeumorphicCard(
@@ -132,47 +137,75 @@ fun WidgetDesignerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "المعاينة الحية للودجت بالخط المرفق الأساسي",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = AppCustomFontFamily,
-                            color = Color(0xFF8B949E)
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF00E5FF).copy(alpha = 0.18f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF))
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "LIVE FONT PREVIEW ⚡",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF00E5FF),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                text = "المعاينة الحية للودجت بالخط الأساسي",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = AppCustomFontFamily,
+                                color = Color(0xFF8B949E)
+                            )
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF00E5FF).copy(alpha = 0.18f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF))
+                            ) {
+                                Text(
+                                    text = "LIVE FONT PREVIEW ⚡",
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF00E5FF),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            FilledTonalIconButton(
+                                onClick = { isPreviewExpanded = !isPreviewExpanded },
+                                modifier = Modifier.size(30.dp),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = Color(0xFF21262D)
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (isPreviewExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (isPreviewExpanded) "تصغير المعاينة" else "توسيع المعاينة",
+                                    tint = Color(0xFF00E5FF),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = isPreviewExpanded,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        val categoryName = remember(config.categoryId, categories) {
+                            categories.find { it.id == config.categoryId }?.name ?: "الكل"
+                        }
+
+                        Box(modifier = Modifier.padding(top = 4.dp)) {
+                            WidgetLivePreviewCard(
+                                config = config,
+                                items = previewItems,
+                                categoryName = categoryName,
+                                onRefreshClick = {
+                                    config = config.copy(currentContentIndex = config.currentContentIndex + 1)
+                                },
+                                onNextClick = {
+                                    config = config.copy(currentContentIndex = config.currentContentIndex + 1)
+                                }
                             )
                         }
                     }
-
-                    val categoryName = remember(config.categoryId, categories) {
-                        categories.find { it.id == config.categoryId }?.name ?: "الكل"
-                    }
-
-                    WidgetLivePreviewCard(
-                        config = config,
-                        items = previewItems,
-                        categoryName = categoryName,
-                        onRefreshClick = {
-                            config = config.copy(currentContentIndex = config.currentContentIndex + 1)
-                        },
-                        onNextClick = {
-                            config = config.copy(currentContentIndex = config.currentContentIndex + 1)
-                        }
-                    )
                 }
             }
 
@@ -181,7 +214,7 @@ fun WidgetDesignerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 tabs.forEachIndexed { index, title ->
@@ -193,14 +226,11 @@ fun WidgetDesignerScreen(
                 }
             }
 
-            // Scrollable Options Form
-            Column(
+            // Options Form
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
                 when (selectedTabIndex) {
                     0 -> ContentSourceAndSelectionTab(
@@ -332,30 +362,33 @@ private fun ContentSourceAndSelectionTab(
                 if (config.contentMode == "SINGLE") {
                     Text("اختر النص الثابت من القائمة:", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 180.dp)
-                            .verticalScroll(rememberScrollState())
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         contentItems.forEach { item ->
                             val isSelected = config.singleContentId == item.id
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 2.dp),
+                                    .clickable { onUpdateConfig(config.copy(singleContentId = item.id)) },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color(0xFF161B22)
+                                color = if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color(0xFF161B22),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isSelected) Color(0xFF00E5FF) else Color(0x22FFFFFF)
+                                )
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
                                         selected = isSelected,
                                         onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) }
                                     )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = item.title.ifEmpty { item.body.take(45) + "..." },
+                                        text = item.title.ifEmpty { item.body.take(50) + "..." },
                                         fontSize = 12.sp,
                                         fontFamily = AppCustomFontFamily,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,

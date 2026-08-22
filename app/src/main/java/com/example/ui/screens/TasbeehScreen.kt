@@ -42,7 +42,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.TasbeehEntity
 import com.example.ui.components.*
+import com.example.ui.theme.AppCustomFontFamily
 import com.example.viewmodel.MainViewModel
+import com.example.widgets.TasbeehAppWidgetProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -226,6 +228,16 @@ fun TasbeehScreen(
                             allItems = tasbeehItems
                         )
                     }
+                }
+
+                // Widget Control & Lock Settings
+                item {
+                    TasbeehWidgetControlsCard(
+                        context = context,
+                        onRefreshWidgets = {
+                            TasbeehAppWidgetProvider.updateTasbeehWidgets(context)
+                        }
+                    )
                 }
             }
         }
@@ -714,3 +726,134 @@ private fun AddCustomDhikrDialog(
         }
     )
 }
+
+@Composable
+fun TasbeehWidgetControlsCard(
+    context: Context,
+    onRefreshWidgets: () -> Unit
+) {
+    var isLocked by remember { mutableStateOf(TasbeehAppWidgetProvider.isLockOpenAppEnabled(context)) }
+
+    NeumorphicCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        glowColor = Color(0xFF00E5FF).copy(alpha = 0.2f)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Widgets,
+                        contentDescription = null,
+                        tint = Color(0xFF00E5FF),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "التحكم في ويدجت المسبحة والشاشة الرئيسية",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        fontFamily = AppCustomFontFamily,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // Lock App Opening Switch
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = if (isLocked) Color(0xFF00E5FF).copy(alpha = 0.12f) else Color(0x22FFFFFF),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isLocked) Color(0xFF00E5FF).copy(alpha = 0.6f) else Color(0x33FFFFFF)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                                contentDescription = null,
+                                tint = if (isLocked) Color(0xFF00E5FF) else Color(0xFF8B949E),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isLocked) "قفل فتح التطبيق (مُفعّل - تسبيح هادئ)" else "فتح التطبيق عند الضغط على الودجت",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                fontFamily = AppCustomFontFamily,
+                                color = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isLocked)
+                                "عند الضغط على أرقام الودجت أو الزر، يتم التسبيح (+1) فوراً دون مغادرة الشاشة الرئيسية أو فتح التطبيق."
+                            else
+                                "الضغط على الودجت سيفتح التطبيق.",
+                            fontSize = 10.sp,
+                            fontFamily = AppCustomFontFamily,
+                            color = Color(0xFFB0BEC5),
+                            lineHeight = 14.sp
+                        )
+                    }
+                    Switch(
+                        checked = isLocked,
+                        onCheckedChange = {
+                            isLocked = it
+                            TasbeehAppWidgetProvider.setLockOpenAppEnabled(context, it)
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color(0xFF0D1117),
+                            checkedTrackColor = Color(0xFF00E5FF)
+                        )
+                    )
+                }
+            }
+
+            // Quick Tips & Refresh
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "💡 نصيحة: يمكنك النقر مباشرة على الأرقام للتسبيح واستخدام الأسهم ◀ ▶ للتبديل بين الأذكار.",
+                    fontSize = 10.sp,
+                    fontFamily = AppCustomFontFamily,
+                    color = Color(0xFF8B949E),
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                FilledTonalButton(
+                    onClick = onRefreshWidgets,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = Color(0xFF21262D),
+                        contentColor = Color(0xFF00E5FF)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("تحديث الويدجت", fontSize = 11.sp, fontFamily = AppCustomFontFamily)
+                }
+            }
+        }
+    }
+}
+

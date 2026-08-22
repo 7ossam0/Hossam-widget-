@@ -4,15 +4,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="12dp"
     android:gravity="center"
     android:background="@drawable/widget_card_background">
 
+    <!-- Top Header Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
 
         <TextView
             android:id="@+id/tasbeeh_widget_badge"
@@ -20,56 +22,103 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="مسبحة إلكترونية 📿"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textColor="#00E5FF"
             android:textStyle="bold" />
 
         <ImageButton
+            android:id="@+id/tasbeeh_widget_open_app_btn"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_widget_settings"
+            android:tint="#8B949E"
+            android:contentDescription="فتح الإعدادات"
+            android:layout_marginEnd="4dp" />
+
+        <ImageButton
             android:id="@+id/tasbeeh_widget_reset_btn"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_widget_refresh"
+            android:tint="#F85149"
             android:contentDescription="تصفير" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tasbeeh_widget_title"
-        android:layout_width="wrap_content"
+    <!-- Dhikr Selector Row with Next / Prev -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="سُبْحَانَ اللَّهِ"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginTop="4dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="2dp">
 
+        <ImageButton
+            android:id="@+id/tasbeeh_widget_prev_btn"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_widget_prev"
+            android:tint="#00E5FF"
+            android:contentDescription="الذكر السابق" />
+
+        <TextView
+            android:id="@+id/tasbeeh_widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="سُبْحَانَ اللَّهِ"
+            android:textColor="#FFFFFF"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <ImageButton
+            android:id="@+id/tasbeeh_widget_next_btn"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_widget_next"
+            android:tint="#00E5FF"
+            android:contentDescription="الذكر التالي" />
+    </LinearLayout>
+
+    <!-- Large Counter Number (Direct Tap Targets +1) -->
     <TextView
         android:id="@+id/tasbeeh_widget_count"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="0"
         android:textColor="#00E5FF"
-        android:textSize="44sp"
+        android:textSize="40sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginTop="2dp" />
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginTop="1dp"
+        android:layout_marginBottom="1dp" />
 
+    <!-- Goal / Target Label -->
     <TextView
         android:id="@+id/tasbeeh_widget_goal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="الهدف: 33"
-        android:textColor="#B0BEC5"
-        android:textSize="12sp"
-        android:layout_marginBottom="8dp" />
+        android:textColor="#8B949E"
+        android:textSize="11sp"
+        android:layout_marginBottom="6dp" />
 
+    <!-- Main Tap Count Button -->
     <Button
         android:id="@+id/tasbeeh_widget_count_btn"
         android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:text="+1 تسبيح"
+        android:layout_height="40dp"
+        android:text="اضغط هنا للتسبيح (+1)"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:textStyle="bold"
         android:background="#2200E5FF" />
 

@@ -2,12 +2,24 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.R
 
-// App-wide Safe Font Family for maximum device compatibility and stability
-val AppCustomFontFamily: FontFamily = FontFamily.Default
+// App-wide Arabic Default Custom Font Family (Tajawal/F5 font from res/font)
+val AppCustomFontFamily: FontFamily = try {
+    FontFamily(
+        Font(R.font.app_font, FontWeight.Normal),
+        Font(R.font.app_font, FontWeight.Medium),
+        Font(R.font.app_font_bold, FontWeight.Bold),
+        Font(R.font.app_font_bold, FontWeight.ExtraBold),
+        Font(R.font.app_font_bold, FontWeight.SemiBold)
+    )
+} catch (e: Throwable) {
+    FontFamily.Default
+}
 
 val Typography = Typography(
     displayLarge = TextStyle(
@@ -88,4 +100,3 @@ val Typography = Typography(
         letterSpacing = 0.5.sp
     )
 )
-
