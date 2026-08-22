@@ -133,14 +133,18 @@ class WidgetRepository(private val context: Context) {
 
     // Initial Seeding
     suspend fun seedDatabaseIfEmpty() = withContext(Dispatchers.IO) {
-        val categories = categoryDao.getAllCategoriesList()
-        if (categories.isEmpty()) {
-            categoryDao.insertCategories(SampleData.initialCategories)
-            contentItemDao.insertContentItems(SampleData.initialContentItems)
-        }
-        val tasbeehCount = tasbeehDao.getCount()
-        if (tasbeehCount == 0) {
-            tasbeehDao.insertAll(SampleData.initialTasbeehItems)
+        try {
+            val categories = categoryDao.getAllCategoriesList()
+            if (categories.isEmpty()) {
+                categoryDao.insertCategories(SampleData.initialCategories)
+                contentItemDao.insertContentItems(SampleData.initialContentItems)
+            }
+            val tasbeehCount = tasbeehDao.getCount()
+            if (tasbeehCount == 0) {
+                tasbeehDao.insertAll(SampleData.initialTasbeehItems)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

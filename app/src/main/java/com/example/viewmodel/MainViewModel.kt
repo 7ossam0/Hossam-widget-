@@ -84,15 +84,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            repository.seedDatabaseIfEmpty()
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                repository.seedDatabaseIfEmpty()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         // Live ticker for second-by-second countdown and sky updates
         viewModelScope.launch {
-            while (true) {
-                kotlinx.coroutines.delay(1000)
-                _currentCalendar.value = java.util.Calendar.getInstance()
+            try {
+                while (true) {
+                    kotlinx.coroutines.delay(1000)
+                    _currentCalendar.value = java.util.Calendar.getInstance()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
