@@ -8,15 +8,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// App-wide Arabic Font Family with safe fallback
-val AppCustomFontFamily: FontFamily = try {
-    FontFamily(
-        Font(R.font.app_font, FontWeight.Normal),
-        Font(R.font.app_font_bold, FontWeight.Bold)
-    )
-} catch (e: Throwable) {
-    FontFamily.Default
-}
+// App-wide Font Family with native system Arabic font support (Noto Sans / Sans-Serif)
+val AppCustomFontFamily: FontFamily = FontFamily.Default
 
 val Typography = Typography(
     displayLarge = TextStyle(
