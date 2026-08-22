@@ -2,23 +2,12 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.example.R
 
-// App-wide Custom Font Family with safe fallback
-val AppCustomFontFamily: FontFamily = try {
-    FontFamily(
-        Font(R.font.app_font, FontWeight.Normal),
-        Font(R.font.app_font, FontWeight.Medium),
-        Font(R.font.app_font_bold, FontWeight.Bold),
-        Font(R.font.app_font_bold, FontWeight.ExtraBold)
-    )
-} catch (e: Throwable) {
-    FontFamily.SansSerif
-}
+// App-wide Safe Font Family for maximum device compatibility and stability
+val AppCustomFontFamily: FontFamily = FontFamily.Default
 
 val Typography = Typography(
     displayLarge = TextStyle(
