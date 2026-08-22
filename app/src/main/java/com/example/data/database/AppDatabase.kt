@@ -41,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("DROP TABLE IF EXISTS tasbeeh_items")
+                db.execSQL("DROP TABLE IF EXISTS `tasbeeh_items`")
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `tasbeeh_items` (
@@ -67,11 +67,10 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "widget_studio.db"
+                    "widget_studio_v8.db"
                 )
-                .addMigrations(MIGRATION_6_7)
-                .fallbackToDestructiveMigration(true)
-                .fallbackToDestructiveMigrationOnDowngrade(true)
+                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigrationOnDowngrade()
                 .build()
                 INSTANCE = instance
                 instance
