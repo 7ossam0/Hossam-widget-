@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,6 +28,8 @@ import com.example.services.PrayerNotificationHelper
 import com.example.ui.screens.*
 import com.example.ui.theme.WidgetStudioTheme
 import com.example.viewmodel.MainViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
@@ -41,9 +44,17 @@ class MainActivity : ComponentActivity() {
 
         try {
             PrayerNotificationHelper.createNotificationChannels(this)
-            PrayerNotificationHelper.scheduleNextPrayerAlarms(this)
         } catch (e: Throwable) {
             // Safe guard
+        }
+
+        // Schedule alarms safely in background
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                PrayerNotificationHelper.scheduleNextPrayerAlarms(this@MainActivity)
+            } catch (e: Throwable) {
+                // Ignore background alarm scheduling failures
+            }
         }
 
         setContent {

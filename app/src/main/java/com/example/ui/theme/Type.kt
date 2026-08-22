@@ -8,11 +8,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// App-wide Arabic Default Custom Font Family (Tajawal font from res/font)
-val AppCustomFontFamily: FontFamily = FontFamily(
-    Font(R.font.app_font, FontWeight.Normal),
-    Font(R.font.app_font_bold, FontWeight.Bold)
-)
+// App-wide Arabic Font Family with safe fallback
+val AppCustomFontFamily: FontFamily = try {
+    FontFamily(
+        Font(R.font.app_font, FontWeight.Normal),
+        Font(R.font.app_font_bold, FontWeight.Bold)
+    )
+} catch (e: Throwable) {
+    FontFamily.Default
+}
 
 val Typography = Typography(
     displayLarge = TextStyle(
