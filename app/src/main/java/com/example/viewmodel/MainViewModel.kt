@@ -29,6 +29,54 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val customFonts: StateFlow<List<com.example.data.model.CustomFontEntity>> = repository.allCustomFonts
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Tasbeeh state
+    val tasbeehItems: StateFlow<List<com.example.data.model.TasbeehEntity>> = repository.allTasbeehItems
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _selectedTasbeehId = MutableStateFlow<Long?>(null)
+    val selectedTasbeehId: StateFlow<Long?> = _selectedTasbeehId.asStateFlow()
+
+    val activeTasbeeh: StateFlow<com.example.data.model.TasbeehEntity?> = combine(tasbeehItems, _selectedTasbeehId) { items, selectedId ->
+        if (items.isEmpty()) null
+        else if (selectedId != null) items.find { it.id == selectedId } ?: items.first()
+        else items.find { it.isFavorite } ?: items.first()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Prayer & Celestial Sky state
+    val selectedCity = MutableStateFlow(com.example.data.prayer.PrayerTimeCalculator.PRESET_CITIES[0])
+    val selectedCalculationMethod = MutableStateFlow(com.example.data.prayer.CalculationMethod.UMM_AL_QURA)
+    val simulatedHour = MutableStateFlow<Float?>(null) // null for real-time
+
+    private val _currentCalendar = MutableStateFlow(java.util.Calendar.getInstance())
+
+    val prayerSchedule: StateFlow<com.example.data.prayer.DailyPrayerSchedule> = combine(
+        selectedCity,
+        selectedCalculationMethod,
+        simulatedHour,
+        _currentCalendar
+    ) { city, method, simHour, cal ->
+        val effectiveCal = if (simHour != null) {
+            val c = java.util.Calendar.getInstance()
+            val h = simHour.toInt()
+            val m = ((simHour - h) * 60).toInt()
+            c.set(java.util.Calendar.HOUR_OF_DAY, h)
+            c.set(java.util.Calendar.MINUTE, m)
+            c.set(java.util.Calendar.SECOND, 0)
+            c
+        } else {
+            cal
+        }
+        com.example.data.prayer.PrayerTimeCalculator.calculateDailySchedule(
+            calendar = effectiveCal,
+            location = city,
+            method = method
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        com.example.data.prayer.PrayerTimeCalculator.calculateDailySchedule()
+    )
+
     private val _selectedCategoryIdFilter = MutableStateFlow<Long?>(null)
     val selectedCategoryIdFilter: StateFlow<Long?> = _selectedCategoryIdFilter.asStateFlow()
 
@@ -39,6 +87,84 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.seedDatabaseIfEmpty()
         }
+
+        // Live ticker for second-by-second countdown and sky updates
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(1000)
+                _currentCalendar.value = java.util.Calendar.getInstance()
+            }
+        }
+    }
+
+    // Tasbeeh Operations
+    fun selectTasbeeh(id: Long) {
+        _selectedTasbeehId.value = id
+    }
+
+    fun incrementTasbeeh(id: Long) {
+        viewModelScope.launch {
+            repository.incrementTasbeeh(id)
+            // Update widget if needed
+            com.example.widgets.TasbeehAppWidgetProvider.updateTasbeehWidgets(getApplication())
+        }
+    }
+
+    fun resetTasbeeh(id: Long) {
+        viewModelScope.launch {
+            repository.resetTasbeeh(id)
+            com.example.widgets.TasbeehAppWidgetProvider.updateTasbeehWidgets(getApplication())
+            _statusMessage.value = "تم تصفير عداد المسبحة"
+        }
+    }
+
+    fun addCustomTasbeeh(title: String, subtitle: String, targetCount: Int, colorHex: String) {
+        viewModelScope.launch {
+            if (title.isNotBlank()) {
+                val item = com.example.data.model.TasbeehEntity(
+                    title = title.trim(),
+                    subtitle = subtitle.trim(),
+                    targetCount = targetCount,
+                    colorHex = colorHex,
+                    orderIndex = tasbeehItems.value.size + 1
+                )
+                val id = repository.insertTasbeeh(item)
+                _selectedTasbeehId.value = id
+                _statusMessage.value = "تمت إضافة الذكر الجديد للمسبحة 📿"
+            }
+        }
+    }
+
+    fun updateTasbeeh(item: com.example.data.model.TasbeehEntity) {
+        viewModelScope.launch {
+            repository.updateTasbeeh(item)
+            _statusMessage.value = "تم تحديث الذكر"
+        }
+    }
+
+    fun deleteTasbeeh(item: com.example.data.model.TasbeehEntity) {
+        viewModelScope.launch {
+            repository.deleteTasbeeh(item)
+            _statusMessage.value = "تم حذف الذكر من المسبحة"
+        }
+    }
+
+    // Prayer Operations
+    fun selectCity(city: com.example.data.prayer.CityLocation) {
+        selectedCity.value = city
+        selectedCalculationMethod.value = city.defaultMethod
+        _statusMessage.value = "تم تغيير المدينة إلى ${city.cityName}"
+        com.example.widgets.PrayerTimesAppWidgetProvider.updatePrayerWidgets(getApplication())
+    }
+
+    fun setCalculationMethod(method: com.example.data.prayer.CalculationMethod) {
+        selectedCalculationMethod.value = method
+        _statusMessage.value = "تم تحديث طريقة الحساب: ${method.displayName}"
+        com.example.widgets.PrayerTimesAppWidgetProvider.updatePrayerWidgets(getApplication())
+    }
+
+    fun setSimulatedHour(hour: Float?) {
+        simulatedHour.value = hour
     }
 
     fun clearStatusMessage() {

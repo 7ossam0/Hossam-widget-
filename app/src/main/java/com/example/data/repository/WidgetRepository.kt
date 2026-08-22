@@ -16,6 +16,45 @@ class WidgetRepository(private val context: Context) {
     private val contentItemDao = db.contentItemDao()
     private val widgetConfigDao = db.widgetConfigDao()
     private val customFontDao = db.customFontDao()
+    private val tasbeehDao = db.tasbeehDao()
+
+    // Tasbeeh Operations
+    val allTasbeehItems: Flow<List<TasbeehEntity>> = tasbeehDao.getAllTasbeeh()
+
+    suspend fun getActiveTasbeeh(): TasbeehEntity? = withContext(Dispatchers.IO) {
+        tasbeehDao.getActiveTasbeeh()
+    }
+
+    suspend fun getTasbeehById(id: Long): TasbeehEntity? = withContext(Dispatchers.IO) {
+        tasbeehDao.getTasbeehById(id)
+    }
+
+    suspend fun insertTasbeeh(item: TasbeehEntity): Long = withContext(Dispatchers.IO) {
+        tasbeehDao.insert(item)
+    }
+
+    suspend fun updateTasbeeh(item: TasbeehEntity) = withContext(Dispatchers.IO) {
+        tasbeehDao.update(item)
+    }
+
+    suspend fun deleteTasbeeh(item: TasbeehEntity) = withContext(Dispatchers.IO) {
+        tasbeehDao.delete(item)
+    }
+
+    suspend fun incrementTasbeeh(id: Long) = withContext(Dispatchers.IO) {
+        tasbeehDao.incrementCount(id)
+    }
+
+    suspend fun resetTasbeeh(id: Long) = withContext(Dispatchers.IO) {
+        tasbeehDao.resetCount(id)
+    }
+
+    suspend fun setActiveTasbeeh(item: TasbeehEntity) = withContext(Dispatchers.IO) {
+        // Unmark all and set this one as favorite
+        val all = tasbeehDao.getAllTasbeeh()
+        // Simple update
+        tasbeehDao.update(item.copy(isFavorite = true))
+    }
 
     private val moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
@@ -99,11 +138,16 @@ class WidgetRepository(private val context: Context) {
             categoryDao.insertCategories(SampleData.initialCategories)
             contentItemDao.insertContentItems(SampleData.initialContentItems)
         }
+        val tasbeehCount = tasbeehDao.getCount()
+        if (tasbeehCount == 0) {
+            tasbeehDao.insertAll(SampleData.initialTasbeehItems)
+        }
     }
 
     suspend fun resetToSampleData() = withContext(Dispatchers.IO) {
         contentItemDao.deleteAllContentItems()
         categoryDao.deleteAllCategories()
+        tasbeehDao.insertAll(SampleData.initialTasbeehItems)
         categoryDao.insertCategories(SampleData.initialCategories)
         contentItemDao.insertContentItems(SampleData.initialContentItems)
     }

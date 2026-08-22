@@ -1,16 +1,20 @@
 package com.example
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,6 +25,10 @@ import com.example.ui.theme.WidgetStudioTheme
 import com.example.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
+    private val mainViewModel: MainViewModel by viewModels {
+        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -32,7 +40,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        WidgetStudioApp()
+                        WidgetStudioApp(viewModel = mainViewModel)
                     }
                 }
             }
@@ -41,11 +49,16 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WidgetStudioApp() {
+fun WidgetStudioApp(
+    viewModel: MainViewModel = viewModel(
+        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
+            LocalContext.current.applicationContext as Application
+        )
+    )
+) {
     val navController = rememberNavController()
-    val viewModel: MainViewModel = viewModel()
-
     var activeDesignerConfig by remember { mutableStateOf<WidgetConfigEntity?>(null) }
+
 
     NavHost(
         navController = navController,
@@ -60,7 +73,23 @@ fun WidgetStudioApp() {
                 },
                 onNavigateToContent = { navController.navigate("content") },
                 onNavigateToCategories = { navController.navigate("categories") },
-                onNavigateToBackup = { navController.navigate("backup") }
+                onNavigateToBackup = { navController.navigate("backup") },
+                onNavigateToPrayer = { navController.navigate("prayer") },
+                onNavigateToTasbeeh = { navController.navigate("tasbeeh") }
+            )
+        }
+
+        composable("prayer") {
+            com.example.ui.screens.PrayerTimesScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("tasbeeh") {
+            com.example.ui.screens.TasbeehScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

@@ -48,6 +48,33 @@
                 android:resource="@xml/widget_studio_info" />
         </receiver>
 
+        <receiver
+            android:name=".widgets.TasbeehAppWidgetProvider"
+            android:exported="true"
+            android:label="المسبحة الذكية التفاعلية">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.widgets.ACTION_TASBEEH_INCREMENT" />
+                <action android:name="com.example.widgets.ACTION_TASBEEH_RESET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_tasbeeh_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widgets.PrayerTimesAppWidgetProvider"
+            android:exported="true"
+            android:label="مواقيت الصلاة والسماء الحية">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.widgets.ACTION_PRAYER_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_prayer_times_info" />
+        </receiver>
+
         <service
             android:name=".widgets.WidgetScrollService"
             android:permission="android.permission.BIND_REMOTEVIEWS"

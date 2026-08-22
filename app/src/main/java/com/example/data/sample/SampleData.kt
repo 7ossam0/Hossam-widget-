@@ -122,4 +122,79 @@ object SampleData {
             isFavorite = false
         )
     )
+
+    val initialTasbeehItems = listOf(
+        com.example.data.model.TasbeehEntity(
+            id = 1,
+            title = "سُبْحَانَ اللَّهِ",
+            subtitle = "تنزيه الله تعالى عن كل نقص",
+            targetCount = 33,
+            colorHex = "#00E5FF",
+            isFavorite = true,
+            orderIndex = 1
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 2,
+            title = "الْحَمْدُ لِلَّهِ",
+            subtitle = "الثناء والشكر لله على نعمه",
+            targetCount = 33,
+            colorHex = "#10B981",
+            isFavorite = false,
+            orderIndex = 2
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 3,
+            title = "لَا إِلَهَ إِلَّا اللَّهُ",
+            subtitle = "كلمة التوحيد الخالصة",
+            targetCount = 33,
+            colorHex = "#F59E0B",
+            isFavorite = false,
+            orderIndex = 3
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 4,
+            title = "اللَّهُ أَكْبَرُ",
+            subtitle = "تعظيم وإجلال رب العالمين",
+            targetCount = 33,
+            colorHex = "#8B5CF6",
+            isFavorite = false,
+            orderIndex = 4
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 5,
+            title = "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ",
+            subtitle = "طلب المغفرة والتوبة ومحو الذنوب",
+            targetCount = 100,
+            colorHex = "#EC4899",
+            isFavorite = false,
+            orderIndex = 5
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 6,
+            title = "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ",
+            subtitle = "بركة ورحمة وتفريج للكرب",
+            targetCount = 100,
+            colorHex = "#3B82F6",
+            isFavorite = false,
+            orderIndex = 6
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 7,
+            title = "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
+            subtitle = "كنز من كنوز الجنة",
+            targetCount = 33,
+            colorHex = "#14B8A6",
+            isFavorite = false,
+            orderIndex = 7
+        ),
+        com.example.data.model.TasbeehEntity(
+            id = 8,
+            title = "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ ، سُبْحَانَ اللَّهِ الْعَظِيمِ",
+            subtitle = "خفيفتان على اللسان ثقيلتان في الميزان",
+            targetCount = 100,
+            colorHex = "#F43F5E",
+            isFavorite = false,
+            orderIndex = 8
+        )
+    )
 }

@@ -8,13 +8,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// App-wide Custom Font Family
-val AppCustomFontFamily = FontFamily(
-    Font(R.font.app_font, FontWeight.Normal),
-    Font(R.font.app_font, FontWeight.Medium),
-    Font(R.font.app_font_bold, FontWeight.Bold),
-    Font(R.font.app_font_bold, FontWeight.ExtraBold)
-)
+// App-wide Custom Font Family with safe fallback
+val AppCustomFontFamily: FontFamily = try {
+    FontFamily(
+        Font(R.font.app_font, FontWeight.Normal),
+        Font(R.font.app_font, FontWeight.Medium),
+        Font(R.font.app_font_bold, FontWeight.Bold),
+        Font(R.font.app_font_bold, FontWeight.ExtraBold)
+    )
+} catch (e: Throwable) {
+    FontFamily.SansSerif
+}
 
 val Typography = Typography(
     displayLarge = TextStyle(
@@ -95,3 +99,4 @@ val Typography = Typography(
         letterSpacing = 0.5.sp
     )
 )
+
