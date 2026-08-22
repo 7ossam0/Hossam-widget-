@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.NavigateNext
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ContentItemEntity
 import com.example.data.model.WidgetConfigEntity
+import com.example.ui.theme.AppCustomFontFamily
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,12 +42,12 @@ fun WidgetLivePreviewCard(
     modifier: Modifier = Modifier
 ) {
     // Parse Colors safely
-    val bgColor = rememberParsedColor(config.backgroundColorHex, Color(0xFF1E293B))
+    val bgColor = rememberParsedColor(config.backgroundColorHex, Color(0xFF161B22))
     val gradStart = rememberParsedColor(config.gradientStartColorHex, bgColor)
     val gradEnd = rememberParsedColor(config.gradientEndColorHex, bgColor)
     val textColor = rememberParsedColor(config.textColorHex, Color.White)
-    val titleColor = rememberParsedColor(config.titleColorHex, Color(0xFFF59E0B))
-    val borderColor = rememberParsedColor(config.borderColorHex, Color(0x33FFFFFF))
+    val titleColor = rememberParsedColor(config.titleColorHex, Color(0xFF00E5FF))
+    val borderColor = rememberParsedColor(config.borderColorHex, Color(0x3300E5FF))
 
     val cornerRadius = config.cornerRadius.dp
     val padding = config.padding.dp
@@ -83,7 +85,7 @@ fun WidgetLivePreviewCard(
         else -> TextAlign.Center
     }
 
-    val selectedFontFamily = androidx.compose.runtime.remember(config.fontFamily, config.customFontPath) {
+    val selectedFontFamily = remember(config.fontFamily, config.customFontPath) {
         if (!config.customFontPath.isNullOrBlank()) {
             try {
                 val file = java.io.File(config.customFontPath)
@@ -91,39 +93,27 @@ fun WidgetLivePreviewCard(
                     val typeface = android.graphics.Typeface.createFromFile(file)
                     FontFamily(androidx.compose.ui.text.font.Typeface(typeface))
                 } else {
-                    FontFamily.Default
+                    AppCustomFontFamily
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
-                FontFamily.Default
+                AppCustomFontFamily
             }
         } else {
             when (config.fontFamily) {
                 "CAIRO" -> FontFamily.Serif
                 "AMIRI" -> FontFamily.Serif
                 "NOTO_KUFI" -> FontFamily.SansSerif
-                else -> FontFamily.Default
+                else -> AppCustomFontFamily // Default to the stylish Tajawal/F5 font!
             }
         }
     }
 
-    val displayItems = androidx.compose.runtime.remember(items, config.currentContentIndex, config.rotationMode) {
-        if (items.isNotEmpty()) {
-            val totalCount = items.size
-            val currentIndex = (config.currentContentIndex % totalCount + totalCount) % totalCount
-            when (config.rotationMode) {
-                "RANDOM" -> {
-                    val random = java.util.Random(config.currentContentIndex.toLong())
-                    val shuffled = items.toMutableList()
-                    java.util.Collections.shuffle(shuffled, random)
-                    shuffled
-                }
-                else -> {
-                    items.drop(currentIndex) + items.take(currentIndex)
-                }
-            }
-        } else {
-            emptyList()
+    val displayItems = remember(items, config.currentContentIndex, config.rotationMode) {
+        if (items.isEmpty()) emptyList()
+        else {
+            val validIndex = (config.currentContentIndex % items.size).let { if (it < 0) it + items.size else it }
+            listOf(items[validIndex])
         }
     }
 
@@ -135,162 +125,131 @@ fun WidgetLivePreviewCard(
             .border(config.borderWidth.dp, borderColor, RoundedCornerShape(cornerRadius))
             .padding(padding)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Header Bar
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Widget Header Row (Category / Custom Name / Date)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (config.showTitle) {
+                if (config.showCategory && !categoryName.isNullOrBlank()) {
                     Text(
-                        text = config.name,
+                        text = categoryName,
                         color = titleColor,
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        fontFamily = selectedFontFamily
                     )
                 } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(1.dp))
                 }
 
-                if (config.showCategory && !categoryName.isNull_orEmpty()) {
-                    Surface(
-                        color = Color.White.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    ) {
-                        Text(
-                            text = categoryName ?: "",
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
+                if (config.showDate) {
+                    val currentDate = remember {
+                        val sdf = SimpleDateFormat("EEEE d MMMM", Locale("ar"))
+                        sdf.format(Date())
                     }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { onRefreshClick?.invoke() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "تحديث",
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { onNextClick?.invoke() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.NavigateNext,
-                            contentDescription = "التالي",
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    Text(
+                        text = currentDate,
+                        color = textColor.copy(alpha = 0.7f),
+                        fontSize = 10.sp,
+                        fontFamily = selectedFontFamily
+                    )
                 }
             }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 4.dp),
-                color = Color.White.copy(alpha = 0.2f)
-            )
-
-            // Scrollable Content Area
+            // Widget Content Body
             if (displayItems.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(90.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                Text(
+                    text = "لا توجد أذكار مضافة لعرضها",
+                    color = textColor.copy(alpha = 0.6f),
+                    fontSize = config.fontSize.sp,
+                    fontFamily = selectedFontFamily,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            } else {
+                val item = displayItems.first()
+
+                if (item.title.isNotBlank()) {
                     Text(
-                        text = "لا يوجد محتوى محدد للودجت",
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 12.sp
+                        text = RichTextHelper.htmlToAnnotatedString(item.title, titleColor),
+                        color = titleColor,
+                        fontSize = (config.fontSize + 2).sp,
+                        fontWeight = titleFontWeight,
+                        fontFamily = selectedFontFamily,
+                        textAlign = titleTextAlign,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 90.dp, max = 220.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+
+                Text(
+                    text = RichTextHelper.htmlToAnnotatedString(item.body, textColor),
+                    color = textColor,
+                    fontSize = config.fontSize.sp,
+                    fontWeight = textFontWeight,
+                    fontStyle = textFontStyle,
+                    textDecoration = textDecoration,
+                    fontFamily = selectedFontFamily,
+                    textAlign = textAlign,
+                    lineHeight = (config.fontSize * config.lineSpacing).sp,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
+            }
+
+            // Widget Interactive Action Bar (Next / Refresh)
+            if (onNextClick != null || onRefreshClick != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(displayItems, key = { it.id }) { item ->
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
+                    if (onRefreshClick != null) {
+                        IconButton(
+                            onClick = onRefreshClick,
+                            modifier = Modifier.size(28.dp)
                         ) {
-                            if (item.title.isNotBlank() && config.showTitle) {
-                                val annotatedTitle = RichTextHelper.htmlToAnnotatedString(
-                                    htmlText = item.title,
-                                    defaultColor = titleColor,
-                                    defaultFontSize = config.titleFontSize.sp
-                                )
-                                Text(
-                                    text = annotatedTitle,
-                                    color = titleColor,
-                                    fontSize = config.titleFontSize.sp,
-                                    fontWeight = titleFontWeight,
-                                    textAlign = titleTextAlign,
-                                    fontFamily = selectedFontFamily,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                            }
-                            val annotatedBody = RichTextHelper.htmlToAnnotatedString(
-                                htmlText = item.body,
-                                defaultColor = textColor,
-                                defaultFontSize = config.fontSize.sp
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "تحديث",
+                                tint = titleColor,
+                                modifier = Modifier.size(16.dp)
                             )
-                            Text(
-                                text = annotatedBody,
-                                color = textColor,
-                                fontSize = config.fontSize.sp,
-                                fontWeight = textFontWeight,
-                                fontStyle = textFontStyle,
-                                textDecoration = textDecoration,
-                                textAlign = textAlign,
-                                lineHeight = (config.fontSize * config.lineSpacing).sp,
-                                fontFamily = selectedFontFamily,
-                                modifier = Modifier.fillMaxWidth()
+                        }
+                    }
+
+                    if (onNextClick != null) {
+                        IconButton(
+                            onClick = onNextClick,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NavigateNext,
+                                contentDescription = "التالي",
+                                tint = titleColor,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
-            }
-
-            // Footer Date
-            if (config.showDate) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ar"))
-                Text(
-                    text = dateFormat.format(Date()),
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 9.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
             }
         }
     }
 }
 
 @Composable
-private fun rememberParsedColor(colorHex: String?, fallback: Color): Color {
-    return try {
-        if (colorHex.isNull_orEmpty()) fallback
-        else Color(android.graphics.Color.parseColor(colorHex))
-    } catch (e: Exception) {
-        fallback
+fun rememberParsedColor(colorHex: String?, defaultColor: Color): Color {
+    return remember(colorHex) {
+        if (colorHex.isNullOrBlank()) defaultColor
+        else {
+            try {
+                Color(android.graphics.Color.parseColor(colorHex))
+            } catch (e: Exception) {
+                defaultColor
+            }
+        }
     }
 }
-
-private fun String?.isNull_orEmpty(): Boolean = this == null || this.isEmpty()

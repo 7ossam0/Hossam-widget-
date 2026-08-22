@@ -7,6 +7,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,10 +19,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.NeumorphicCard
+import com.example.ui.theme.AppCustomFontFamily
 import com.example.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -67,9 +71,9 @@ fun BackupRestoreScreen(
             coroutineScope.launch {
                 val success = viewModel.importFromFileUri(uri)
                 if (success) {
-                    Toast.makeText(context, "تم استرجاع النسخة الاحتياطية بنجاح 📂", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "تمت استعادة البيانات بنجاح من الملف 🎉", Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(context, "تعذر استيراد الملف", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "الملف غير صالح أو تعذر الاستيراد", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -78,180 +82,165 @@ fun BackupRestoreScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("النسخ الاحتياطي والاستعادة", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "النسخ الاحتياطي والاستعادة",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = AppCustomFontFamily,
+                        color = Color(0xFFF0F6FC)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع", tint = Color(0xFFF0F6FC))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D1117)
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFF0D1117))
                 .padding(paddingValues)
                 .verticalScroll(scrollState)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Direct File Export Card
-            Card(
+            // Card 1: Export to Phone File
+            NeumorphicCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(22.dp),
+                backgroundColor = Color(0xFF161B22),
+                glowColor = Color(0xFF00E5FF).copy(alpha = 0.25f)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.SaveAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.CloudUpload, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("حفظ نسخة احتياطية في ملف (.json)", fontWeight = FontWeight.Bold)
+                        Text("تصدير نسخة احتياطية كاملة", fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     }
 
                     Text(
-                        "حفظ جميع الأدعية، الأذكار، النصوص، والتصاميم المخصصة كملف على ذاكرة الهاتف أو Google Drive لاسترجاعها في أي وقت دون الحاجة لنسخ أكواد يدوية.",
+                        "حفظ جميع الأذكار والتصنيفات وإعدادات الودجات في ملف JSON على وحدة تخزين هاتفك.",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontFamily = AppCustomFontFamily,
+                        color = Color(0xFF8B949E)
                     )
 
                     Button(
                         onClick = {
-                            val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())
-                            exportFileLauncher.launch("Athkar_Backup_$timestamp.json")
+                            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
+                            exportFileLauncher.launch("athkar_backup_$timeStamp.json")
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF00E5FF),
+                            contentColor = Color(0xFF0D1117)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Download, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("حفظ ملف النسخة الاحتياطية على الهاتف")
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("حفظ ملف النسخة على الهاتف", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                jsonExportString = viewModel.exportDataJson()
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("Athkar Backup JSON", jsonExportString)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, "تم نسخ نص النسخة الاحتياطية إلى الحافظة 📋", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF00E5FF))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("نسخ البيانات كنص (JSON Clipboard)", fontFamily = AppCustomFontFamily, color = Color(0xFF00E5FF))
                     }
                 }
             }
 
-            // Direct File Import Card
-            Card(
+            // Card 2: Import / Restore
+            NeumorphicCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(22.dp),
+                backgroundColor = Color(0xFF161B22),
+                glowColor = Color(0xFFA371F7).copy(alpha = 0.25f)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Icon(Icons.Default.CloudDownload, contentDescription = null, tint = Color(0xFFA371F7), modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("استعادة نسخة احتياطية من ملف (.json)", fontWeight = FontWeight.Bold)
+                        Text("استعادة النسخة الاحتياطية", fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     }
 
                     Text(
-                        "اختر ملف النسخة الاحتياطية المحفوظ سابقاً بصيغة JSON من جهازك لاستعادة كافة البيانات فوراً.",
+                        "استرجاع الأذكار والودجات من ملف محفوظ مسبقاً أو عبر لصق نص الـ JSON مباشرة.",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontFamily = AppCustomFontFamily,
+                        color = Color(0xFF8B949E)
                     )
 
                     Button(
                         onClick = {
                             importFileLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFA371F7),
+                            contentColor = Color(0xFF0D1117)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Upload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("اختيار ملف واستعادته من الهاتف")
+                        Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("اختيار ملف نسخة احتياطية من الهاتف", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
                     }
-                }
-            }
-
-            // Secondary: Manual Text Copy / Paste
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("النسخ اليدوي كنص (اختياري)", fontWeight = FontWeight.Bold)
-                    Text(
-                        "يمكنك أيضاً إنشاء كود نصي مباشر لنسخه إلى الحافظة أو لصقه يدوياً.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    jsonExportString = viewModel.exportDataJson()
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    val clip = ClipData.newPlainText("Backup JSON", jsonExportString)
-                                    clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, "تم نسخ كود JSON للحافظة", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("نسخ كود JSON", fontSize = 11.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = { showManualImportDialog = true },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("لصق كود JSON", fontSize = 11.sp)
-                        }
-                    }
-
-                    if (jsonExportString.isNotEmpty()) {
-                        OutlinedTextField(
-                            value = jsonExportString,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("بيانات النسخة الاحتياطية") },
-                            maxLines = 5,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-
-            // Reset Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("إعادة تعيين للبيانات الافتراضية", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                    Text(
-                        "استعادة البيانات والتصنيفات الأصلية (الأذكار والأدعية والقرآن والاقتباسات النموذجية).",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
 
                     OutlinedButton(
-                        onClick = { showResetConfirmDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        onClick = { showManualImportDialog = true },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("إعادة تعيين البيانات الافتراضية")
+                        Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFFA371F7))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("لصق نص النسخة يدوياً واستعادتها", fontFamily = AppCustomFontFamily, color = Color(0xFFA371F7))
+                    }
+                }
+            }
+
+            // Card 3: Reset / Clear Database
+            NeumorphicCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                backgroundColor = Color(0xFF161B22)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("إعادة تعيين التطبيق والبيانات", fontWeight = FontWeight.Bold, color = Color(0xFFF85149), fontFamily = AppCustomFontFamily)
+                    Text(
+                        "استرجاع الأذكار النموذجية الافتراضية وحذف البيانات المخصصة (يمكنك أخذ نسخة احتياطية أولاً).",
+                        fontSize = 12.sp,
+                        fontFamily = AppCustomFontFamily,
+                        color = Color(0xFF8B949E)
+                    )
+                    OutlinedButton(
+                        onClick = { showResetConfirmDialog = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF85149)),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("استعادة الأذكار والتصنيفات الافتراضية", fontFamily = AppCustomFontFamily)
                     }
                 }
             }
@@ -261,19 +250,23 @@ fun BackupRestoreScreen(
     if (showManualImportDialog) {
         AlertDialog(
             onDismissRequest = { showManualImportDialog = false },
-            title = { Text("استيراد كود JSON يدوياً", fontWeight = FontWeight.Bold) },
+            containerColor = Color(0xFF161B22),
+            shape = RoundedCornerShape(24.dp),
+            title = { Text("لصق بيانات الـ JSON", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("الصق نص النسخة الاحتياطية أدناه:")
-                    OutlinedTextField(
-                        value = jsonImportString,
-                        onValueChange = { jsonImportString = it },
-                        placeholder = { Text("{\"categories\": [...], \"contentItems\": [...]}") },
-                        minLines = 5,
-                        maxLines = 8,
-                        modifier = Modifier.fillMaxWidth()
+                OutlinedTextField(
+                    value = jsonImportString,
+                    onValueChange = { jsonImportString = it },
+                    placeholder = { Text("الصق كود النسخة الاحتياطية هنا...", fontFamily = AppCustomFontFamily) },
+                    modifier = Modifier.fillMaxWidth().height(180.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFF0D1117),
+                        unfocusedContainerColor = Color(0xFF0D1117),
+                        focusedBorderColor = Color(0xFF00E5FF),
+                        unfocusedBorderColor = Color(0xFF30363D)
                     )
-                }
+                )
             },
             confirmButton = {
                 Button(
@@ -281,18 +274,24 @@ fun BackupRestoreScreen(
                         coroutineScope.launch {
                             val success = viewModel.importDataJson(jsonImportString)
                             if (success) {
+                                Toast.makeText(context, "تمت الاستعادة بنجاح 🎉", Toast.LENGTH_LONG).show()
                                 showManualImportDialog = false
-                                jsonImportString = ""
+                            } else {
+                                Toast.makeText(context, "النص غير صالح كنسخة احتياطية", Toast.LENGTH_LONG).show()
                             }
                         }
                     },
-                    enabled = jsonImportString.isNotBlank()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00E5FF),
+                        contentColor = Color(0xFF0D1117)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("استيراد الآن")
+                    Text("استعادة البيانات", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showManualImportDialog = false }) { Text("إلغاء") }
+                TextButton(onClick = { showManualImportDialog = false }) { Text("إلغاء", fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E)) }
             }
         )
     }
@@ -300,21 +299,28 @@ fun BackupRestoreScreen(
     if (showResetConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showResetConfirmDialog = false },
-            title = { Text("تأكيد إعادة التعيين", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
-            text = { Text("هل أنت متأكد من رغبتك في مسح كافة النصوص الحالية واستعادة البيانات الافتراضية؟ لا يمكن التراجع عن هذا الإجراء إلا بوجود نسخة احتياطية.") },
+            containerColor = Color(0xFF161B22),
+            shape = RoundedCornerShape(24.dp),
+            title = { Text("تأكيد استعادة الإعدادات الافتراضية؟", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC)) },
+            text = { Text("سيتم مسح الأذكار الحالية وإعادة تعيين الأذكار النموذجية الافتراضية.", fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E)) },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.resetDataToDefaults()
                         showResetConfirmDialog = false
+                        Toast.makeText(context, "تمت إعادة تعيين البيانات النموذجية بنجاح", Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF85149),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("نعم، إعادة تعيين")
+                    Text("تأكيد الاستعادة", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetConfirmDialog = false }) { Text("إلغاء") }
+                TextButton(onClick = { showResetConfirmDialog = false }) { Text("إلغاء", fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E)) }
             }
         )
     }

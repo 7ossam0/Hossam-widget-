@@ -1,13 +1,13 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,7 +27,9 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.CategoryEntity
 import com.example.data.model.ContentItemEntity
 import com.example.ui.components.GranularRichTextEditorToolbar
+import com.example.ui.components.NeumorphicCard
 import com.example.ui.components.RichTextHelper
+import com.example.ui.theme.AppCustomFontFamily
 import com.example.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,24 +61,28 @@ fun ContentManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("محتوى الودجت والأذكار", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "إدارة الأذكار والمحتوى",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = AppCustomFontFamily,
+                        color = Color(0xFFF0F6FC)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع", tint = Color(0xFFF0F6FC))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showFavoritesOnly = !showFavoritesOnly }) {
-                        Icon(
-                            if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "المفضلة",
-                            tint = if (showFavoritesOnly) Color.Red else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
                     IconButton(onClick = { showBulkImportDialog = true }) {
-                        Icon(Icons.Default.PostAdd, contentDescription = "استيراد نصوص متعددة", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.UploadFile, contentDescription = "استيراد نصوص متعددة", tint = Color(0xFF00E5FF))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D1117)
+                )
             )
         },
         floatingActionButton = {
@@ -85,42 +91,51 @@ fun ContentManagementScreen(
                     editingItem = null
                     showAddEditDialog = true
                 },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("إضافة نص جديد") }
+                icon = { Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF0D1117)) },
+                text = { Text("إضافة ذكر جديد", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFF0D1117)) },
+                containerColor = Color(0xFF00E5FF),
+                shape = RoundedCornerShape(18.dp)
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFF0D1117))
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Search TextField
+            // Search Box
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("بحث عن أذكار، دعاء، أو نص...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                placeholder = { Text("بحث في نصوص الأذكار أو العناوين...", fontSize = 12.sp, fontFamily = AppCustomFontFamily) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF00E5FF)) },
                 trailingIcon = if (searchQuery.isNotEmpty()) {
-                    { IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Close, contentDescription = "مسح") } }
+                    { IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Close, contentDescription = "مسح", tint = Color(0xFF8B949E)) } }
                 } else null,
+                shape = RoundedCornerShape(18.dp),
                 singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFF161B22),
+                    unfocusedContainerColor = Color(0xFF161B22),
+                    focusedBorderColor = Color(0xFF00E5FF),
+                    unfocusedBorderColor = Color(0xFF30363D)
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
 
-            // Category Filter Chips
+            // Category Chips Row
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 item {
                     FilterChip(
                         selected = selectedCatId == null,
                         onClick = { viewModel.setCategoryFilter(null) },
-                        label = { Text("الكل (${contentItems.size})") }
+                        label = { Text("الكل (${contentItems.size})", fontFamily = AppCustomFontFamily) }
                     )
                 }
                 items(categories) { cat ->
@@ -128,135 +143,102 @@ fun ContentManagementScreen(
                     FilterChip(
                         selected = selectedCatId == cat.id,
                         onClick = { viewModel.setCategoryFilter(cat.id) },
-                        label = { Text("${cat.name} ($count)") }
+                        label = { Text("${cat.name} ($count)", fontFamily = AppCustomFontFamily) }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Items List
+            // List of Items
             if (filteredItems.isEmpty()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("لا توجد نصوص مطابقة للبحث", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "لا توجد أذكار مطابقة",
+                        fontFamily = AppCustomFontFamily,
+                        color = Color(0xFF8B949E),
+                        fontSize = 14.sp
+                    )
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     items(filteredItems, key = { it.id }) { item ->
-                        val cat = categories.find { it.id == item.categoryId }
-                        val catName = cat?.name ?: "بدون تصنيف"
-
-                        Card(
+                        val itemCat = categories.find { it.id == item.categoryId }
+                        NeumorphicCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (item.isActive) MaterialTheme.colorScheme.surface
-                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(20.dp),
+                            backgroundColor = Color(0xFF161B22)
                         ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    if (itemCat != null) {
                                         Surface(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(8.dp)
+                                            color = Color(0xFF00E5FF).copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.3f))
                                         ) {
                                             Text(
-                                                text = catName,
+                                                itemCat.name,
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                fontFamily = AppCustomFontFamily,
+                                                color = Color(0xFF00E5FF),
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                             )
                                         }
-
-                                        if (item.repeatCount > 1) {
-                                            Surface(
-                                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                                shape = RoundedCornerShape(8.dp)
-                                            ) {
-                                                Text(
-                                                    text = "تكرار: ${item.repeatCount} مرات",
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
+                                    } else {
+                                        Spacer(modifier = Modifier.width(1.dp))
                                     }
 
                                     Row {
-                                        IconButton(onClick = { viewModel.toggleFavorite(item) }) {
+                                        IconButton(onClick = { viewModel.toggleFavorite(item) }, modifier = Modifier.size(32.dp)) {
                                             Icon(
                                                 if (item.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                                contentDescription = "المفضلة",
-                                                tint = if (item.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                                                contentDescription = "مفضلة",
+                                                tint = if (item.isFavorite) Color(0xFFF85149) else Color(0xFF8B949E),
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
-
                                         IconButton(onClick = {
                                             editingItem = item
                                             showAddEditDialog = true
-                                        }) {
-                                            Icon(Icons.Default.Edit, contentDescription = "تعديل", tint = MaterialTheme.colorScheme.primary)
+                                        }, modifier = Modifier.size(32.dp)) {
+                                            Icon(Icons.Default.Edit, contentDescription = "تعديل", tint = Color(0xFF00E5FF), modifier = Modifier.size(18.dp))
                                         }
-
-                                        IconButton(onClick = { viewModel.deleteContentItem(item) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "حذف", tint = MaterialTheme.colorScheme.error)
+                                        IconButton(onClick = { viewModel.deleteContentItem(item) }, modifier = Modifier.size(32.dp)) {
+                                            Icon(Icons.Default.Delete, contentDescription = "حذف", tint = Color(0xFFF85149), modifier = Modifier.size(18.dp))
                                         }
                                     }
                                 }
 
                                 if (item.title.isNotBlank()) {
                                     Text(
-                                        text = RichTextHelper.htmlToAnnotatedString(item.title),
+                                        text = RichTextHelper.htmlToAnnotatedString(item.title, Color(0xFF00E5FF)),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(vertical = 4.dp)
+                                        fontFamily = AppCustomFontFamily,
+                                        color = Color(0xFF00E5FF)
                                     )
                                 }
 
                                 Text(
-                                    text = RichTextHelper.htmlToAnnotatedString(item.body),
+                                    text = RichTextHelper.htmlToAnnotatedString(item.body, Color(0xFFF0F6FC)),
                                     fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 5,
+                                    fontFamily = AppCustomFontFamily,
+                                    color = Color(0xFFF0F6FC),
+                                    lineHeight = 20.sp,
+                                    maxLines = 4,
                                     overflow = TextOverflow.Ellipsis
                                 )
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("حالة العرض بالودجت: ", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
-                                        Switch(
-                                            checked = item.isActive,
-                                            onCheckedChange = { viewModel.toggleActive(item) }
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
@@ -265,265 +247,175 @@ fun ContentManagementScreen(
         }
     }
 
+    // Add / Edit Dialog
     if (showAddEditDialog) {
-        AddEditContentDialog(
-            item = editingItem,
-            categories = categories,
-            selectedDefaultCategoryId = selectedCatId,
-            onDismiss = { showAddEditDialog = false },
-            onSave = { title, body, catId, isFav, repCount ->
-                if (editingItem != null) {
-                    viewModel.updateContentItem(
-                        editingItem!!.copy(
-                            title = title,
-                            body = body,
-                            categoryId = catId,
-                            isFavorite = isFav,
-                            repeatCount = repCount
-                        )
-                    )
-                } else {
-                    viewModel.addContentItem(title, body, catId, isFav, repCount)
-                }
-                showAddEditDialog = false
-            }
-        )
-    }
+        var titleVal by remember { mutableStateOf(editingItem?.title ?: "") }
+        var bodyVal by remember { mutableStateOf(TextFieldValue(editingItem?.body ?: "")) }
+        var selectedCatIdForNew by remember { mutableStateOf(editingItem?.categoryId ?: categories.firstOrNull()?.id) }
 
-    if (showBulkImportDialog) {
-        BulkImportDialog(
-            categories = categories,
-            selectedDefaultCategoryId = selectedCatId,
-            onDismiss = { showBulkImportDialog = false },
-            onImport = { itemsList, catId ->
-                viewModel.addBulkContentItems(itemsList, catId)
-                showBulkImportDialog = false
-            }
-        )
-    }
-}
-
-@Composable
-private fun AddEditContentDialog(
-    item: ContentItemEntity?,
-    categories: List<CategoryEntity>,
-    selectedDefaultCategoryId: Long?,
-    onDismiss: () -> Unit,
-    onSave: (title: String, body: String, categoryId: Long?, isFavorite: Boolean, repeatCount: Int) -> Unit
-) {
-    var title by remember { mutableStateOf(item?.title ?: "") }
-    var bodyFieldValue by remember { mutableStateOf(TextFieldValue(item?.body ?: "")) }
-    var categoryId by remember { mutableStateOf(item?.categoryId ?: selectedDefaultCategoryId) }
-    var isFavorite by remember { mutableStateOf(item?.isFavorite ?: false) }
-    var repeatCount by remember { mutableIntStateOf(item?.repeatCount ?: 1) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                if (item == null) "إضافة وتنسيق نص جديد" else "تعديل وتنسيق النص",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("العنوان (اختياري)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
+        AlertDialog(
+            onDismissRequest = { showAddEditDialog = false },
+            containerColor = Color(0xFF161B22),
+            shape = RoundedCornerShape(24.dp),
+            title = {
                 Text(
-                    "أدوات التنسيق المتقدمة (Word Style):",
-                    fontSize = 11.sp,
+                    if (editingItem == null) "إضافة ذكر جديد" else "تعديل الذكر",
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontFamily = AppCustomFontFamily,
+                    color = Color(0xFFF0F6FC)
                 )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = titleVal,
+                        onValueChange = { titleVal = it },
+                        label = { Text("العنوان (اختياري)", fontFamily = AppCustomFontFamily) },
+                        shape = RoundedCornerShape(14.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0D1117),
+                            unfocusedContainerColor = Color(0xFF0D1117),
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color(0xFF30363D)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                // Interactive Rich Text Formatting Toolbar with Granular Controls
-                GranularRichTextEditorToolbar(
-                    textFieldValue = bodyFieldValue,
-                    onValueChange = { bodyFieldValue = it }
-                )
-
-                OutlinedTextField(
-                    value = bodyFieldValue,
-                    onValueChange = { bodyFieldValue = it },
-                    label = { Text("محتوى النص أو الدعاء *") },
-                    minLines = 4,
-                    maxLines = 8,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Live Formatted Text Preview
-                if (bodyFieldValue.text.isNotBlank()) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-                            .padding(8.dp)
+                    Text("حدد التصنيف:", fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                "معاينة التنسيق والألوان المطبقة:",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                        categories.forEach { cat ->
+                            FilterChip(
+                                selected = selectedCatIdForNew == cat.id,
+                                onClick = { selectedCatIdForNew = cat.id },
+                                label = { Text(cat.name, fontFamily = AppCustomFontFamily) }
                             )
-                            Text(
-                                text = RichTextHelper.htmlToAnnotatedString(bodyFieldValue.text),
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                        }
+                    }
+
+                    Text("نص المحتوى (يدعم التحديد والتلوين):", fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                    OutlinedTextField(
+                        value = bodyVal,
+                        onValueChange = { bodyVal = it },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0D1117),
+                            unfocusedContainerColor = Color(0xFF0D1117),
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color(0xFF30363D)
+                        ),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 200.dp)
+                    )
+
+                    GranularRichTextEditorToolbar(
+                        textFieldValue = bodyVal,
+                        onValueChange = { bodyVal = it }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (bodyVal.text.isNotBlank()) {
+                            if (editingItem == null) {
+                                viewModel.addContentItem(
+                                    title = titleVal,
+                                    body = bodyVal.text,
+                                    categoryId = selectedCatIdForNew
+                                )
+                            } else {
+                                viewModel.updateContentItem(
+                                    editingItem!!.copy(
+                                        categoryId = selectedCatIdForNew,
+                                        title = titleVal,
+                                        body = bodyVal.text
+                                    )
+                                )
+                            }
+                            showAddEditDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00E5FF),
+                        contentColor = Color(0xFF0D1117)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("حفظ", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddEditDialog = false }) { Text("إلغاء", fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E)) }
+            }
+        )
+    }
+
+    // Bulk Import Dialog
+    if (showBulkImportDialog) {
+        var bulkText by remember { mutableStateOf("") }
+        var bulkCatId by remember { mutableStateOf(categories.firstOrNull()?.id) }
+
+        AlertDialog(
+            onDismissRequest = { showBulkImportDialog = false },
+            containerColor = Color(0xFF161B22),
+            shape = RoundedCornerShape(24.dp),
+            title = { Text("استيراد أذكار متعددة دفعة واحدة", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("الصق النصوص هنا مفصولة بسطر فارغ بين كل ذكر والآخر:", fontSize = 11.sp, fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E))
+                    OutlinedTextField(
+                        value = bulkText,
+                        onValueChange = { bulkText = it },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0D1117),
+                            unfocusedContainerColor = Color(0xFF0D1117),
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color(0xFF30363D)
+                        ),
+                        modifier = Modifier.fillMaxWidth().height(160.dp)
+                    )
+
+                    Text("اختر التصنيف للإضافة إليه:", fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        categories.forEach { cat ->
+                            FilterChip(
+                                selected = bulkCatId == cat.id,
+                                onClick = { bulkCatId = cat.id },
+                                label = { Text(cat.name, fontFamily = AppCustomFontFamily) }
                             )
                         }
                     }
                 }
-
-                // Dua Repetitions Count
-                Text("عدد مرات التكرار:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                val repeatPresets = listOf(1, 3, 7, 33, 100)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    repeatPresets.forEach { count ->
-                        FilterChip(
-                            selected = repeatCount == count,
-                            onClick = { repeatCount = count },
-                            label = { Text("$count مرة", fontSize = 11.sp) }
-                        )
-                    }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val items = bulkText.split("\n\n").filter { it.isNotBlank() }.map { "" to it.trim() }
+                        viewModel.addBulkContentItems(items, bulkCatId)
+                        showBulkImportDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00E5FF),
+                        contentColor = Color(0xFF0D1117)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("استيراد الكل", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
                 }
-
-                Text("التصنيف:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    item {
-                        FilterChip(
-                            selected = categoryId == null,
-                            onClick = { categoryId = null },
-                            label = { Text("بدون تصنيف") }
-                        )
-                    }
-                    items(categories) { cat ->
-                        FilterChip(
-                            selected = categoryId == cat.id,
-                            onClick = { categoryId = cat.id },
-                            label = { Text(cat.name) }
-                        )
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = isFavorite, onCheckedChange = { isFavorite = it })
-                    Text("إضافة إلى المفضلة", fontSize = 13.sp)
-                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkImportDialog = false }) { Text("إلغاء", fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E)) }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (bodyFieldValue.text.isNotBlank()) {
-                        onSave(title, bodyFieldValue.text, categoryId, isFavorite, repeatCount)
-                    }
-                },
-                enabled = bodyFieldValue.text.isNotBlank()
-            ) {
-                Text("حفظ")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("إلغاء") }
-        }
-    )
-}
-
-@Composable
-private fun BulkImportDialog(
-    categories: List<CategoryEntity>,
-    selectedDefaultCategoryId: Long?,
-    onDismiss: () -> Unit,
-    onImport: (itemsList: List<Pair<String, String>>, categoryId: Long?) -> Unit
-) {
-    var rawText by remember { mutableStateOf("") }
-    var categoryId by remember { mutableStateOf(selectedDefaultCategoryId) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("استيراد نصوص متعددة دفعة واحدة (Bulk Import)", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    "الصق مجموعة من الأدعية أو النصوص هنا مفصولة بسطر فارغ مزدوج أو كل نص بسطر، وسيقوم التطبيق بتقسيمها وإضافتها تلقائياً:",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                OutlinedTextField(
-                    value = rawText,
-                    onValueChange = { rawText = it },
-                    placeholder = { Text("مثال:\nاللهم إني أسألك علماً نافعاً\n\nاللهم اغفر لي ولوالدي\n\nسبحان الله وبحمده") },
-                    minLines = 6,
-                    maxLines = 10,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text("التصنيف المخصص للنصوص:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    item {
-                        FilterChip(
-                            selected = categoryId == null,
-                            onClick = { categoryId = null },
-                            label = { Text("بدون تصنيف") }
-                        )
-                    }
-                    items(categories) { cat ->
-                        FilterChip(
-                            selected = categoryId == cat.id,
-                            onClick = { categoryId = cat.id },
-                            label = { Text(cat.name) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val lines = rawText.split(Regex("\n\n+|\r\n\r\n+|---"))
-                        .map { it.trim() }
-                        .filter { it.isNotBlank() }
-
-                    val parsedPairs = lines.map { content ->
-                        val parts = content.lines().filter { it.isNotBlank() }
-                        if (parts.size > 1 && parts.first().length < 35) {
-                            parts.first() to parts.drop(1).joinToString("\n")
-                        } else {
-                            "" to content
-                        }
-                    }
-
-                    if (parsedPairs.isNotEmpty()) {
-                        onImport(parsedPairs, categoryId)
-                    }
-                },
-                enabled = rawText.isNotBlank()
-            ) {
-                Text("إضافة الكل الآن")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("إلغاء") }
-        }
-    )
+        )
+    }
 }

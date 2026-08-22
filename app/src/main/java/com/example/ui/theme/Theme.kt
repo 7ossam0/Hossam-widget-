@@ -8,48 +8,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = GoldAccent,
-    onPrimary = Color(0xFF1E1B4B),
-    primaryContainer = Color(0xFF2E230B),
-    onPrimaryContainer = GoldLight,
-    secondary = TealAccent,
-    onSecondary = Color(0xFF022C22),
-    secondaryContainer = Color(0xFF064E3B),
-    onSecondaryContainer = Color(0xFFA7F3D0),
-    tertiary = BlueAccent,
-    background = DarkNavy,
-    onBackground = Color(0xFFF1F5F9),
+    primary = NeonCyan,
+    onPrimary = Color(0xFF002B36),
+    primaryContainer = Color(0xFF0D3848),
+    onPrimaryContainer = Color(0xFF80F0FF),
+    secondary = NeonPurple,
+    onSecondary = Color(0xFF2E0854),
+    secondaryContainer = Color(0xFF381E72),
+    onSecondaryContainer = Color(0xFFE8DEF8),
+    tertiary = NeonAmber,
+    onTertiary = Color(0xFF452B00),
+    tertiaryContainer = Color(0xFF633F00),
+    onTertiaryContainer = Color(0xFFFFDDB3),
+    background = DarkBg,
+    onBackground = Color(0xFFF0F6FC),
     surface = DarkSurface,
-    onSurface = Color(0xFFF8FAFC),
-    surfaceVariant = Color(0xFF1E293B),
-    onSurfaceVariant = Color(0xFFCBD5E1),
-    outline = SlateBorder,
-    outlineVariant = Color(0xFF1E293B)
+    onSurface = Color(0xFFF0F6FC),
+    surfaceVariant = DarkCard,
+    onSurfaceVariant = Color(0xFF8B949E),
+    outline = DarkBorder,
+    outlineVariant = Color(0xFF21262D)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = AmberWarm,
+    primary = Color(0xFF0284C7),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFFEF3C7),
-    onPrimaryContainer = Color(0xFF78350F),
-    secondary = EmeraldPrimary,
+    primaryContainer = Color(0xFFE0F2FE),
+    onPrimaryContainer = Color(0xFF0369A1),
+    secondary = Color(0xFF7C3AED),
     onSecondary = Color.White,
-    secondaryContainer = EmeraldContainer,
-    onSecondaryContainer = Color(0xFF065F46),
-    tertiary = BlueAccent,
-    background = LightBackground,
-    onBackground = DarkText,
+    secondaryContainer = Color(0xFFEDE9FE),
+    onSecondaryContainer = Color(0xFF5B21B6),
+    tertiary = Color(0xFFD97706),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = Color(0xFF92400E),
+    background = LightBg,
+    onBackground = LightText,
     surface = LightSurface,
-    onSurface = DarkText,
-    surfaceVariant = Color(0xFFF1F5F9),
-    onSurfaceVariant = MutedText,
+    onSurface = LightText,
+    surfaceVariant = LightCard,
+    onSurfaceVariant = LightMutedText,
     outline = LightBorder,
-    outlineVariant = Color(0xFFE2E8F0)
+    outlineVariant = Color(0xFFCBD5E1)
 )
 
 @Composable
 fun WidgetStudioTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true, // Default to sleek dark inspired by luxury dashboard UI
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -71,7 +77,7 @@ fun WidgetStudioTheme(
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

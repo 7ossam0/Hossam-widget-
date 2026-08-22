@@ -2,22 +2,31 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val DarkNavy = Color(0xFF0A0F1D)
-val DarkSurface = Color(0xFF131D31)
-val SlateCard = Color(0xFF1E293B)
-val SlateBorder = Color(0xFF334155)
-val GoldAccent = Color(0xFFF59E0B)
-val GoldLight = Color(0xFFFDE68A)
-val TealAccent = Color(0xFF10B981)
-val EmeraldPrimary = Color(0xFF059669)
-val EmeraldContainer = Color(0xFFD1FAE5)
-val BlueAccent = Color(0xFF3B82F6)
-val PurpleAccent = Color(0xFF8B5CF6)
-val AmberWarm = Color(0xFFD97706)
+// Modern Dark Neumorphic & Glow Palette
+val DarkBg = Color(0xFF0D1117)
+val DarkSurface = Color(0xFF161B22)
+val DarkCard = Color(0xFF1C2128)
+val DarkCardElevated = Color(0xFF22272E)
+val DarkBorder = Color(0xFF30363D)
 
-val LightBackground = Color(0xFFF8FAFC)
+// Neon & Glow Accents
+val NeonCyan = Color(0xFF00E5FF)
+val NeonCyanGlow = Color(0xFF00B0FF)
+val NeonBlue = Color(0xFF388BFD)
+val NeonPurple = Color(0xFFA371F7)
+val NeonAmber = Color(0xFFE3B341)
+val NeonGreen = Color(0xFF3FB950)
+val NeonRed = Color(0xFFF85149)
+
+// Light Theme Elements (Clean White & Slate)
+val LightBg = Color(0xFFF0F2F5)
 val LightSurface = Color(0xFFFFFFFF)
-val LightCard = Color(0xFFFFFFFF)
+val LightCard = Color(0xFFF8FAFC)
 val LightBorder = Color(0xFFE2E8F0)
-val DarkText = Color(0xFF0F172A)
-val MutedText = Color(0xFF64748B)
+val LightText = Color(0xFF0F172A)
+val LightMutedText = Color(0xFF64748B)
+
+// Glassmorphism overlays
+val GlassDark = Color(0x99161B22)
+val GlassBorder = Color(0x3358A6FF)
+val GlassWhite = Color(0x40FFFFFF)

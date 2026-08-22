@@ -18,20 +18,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CategoryEntity
 import com.example.data.model.ContentItemEntity
 import com.example.data.model.CustomFontEntity
 import com.example.data.model.WidgetConfigEntity
-import com.example.ui.components.ColorPickerRow
-import com.example.ui.components.GranularRichTextEditorToolbar
-import com.example.ui.components.RichTextHelper
-import com.example.ui.components.WidgetLivePreviewCard
+import com.example.ui.components.*
+import com.example.ui.theme.AppCustomFontFamily
 import com.example.viewmodel.MainViewModel
-import androidx.compose.ui.text.input.TextFieldValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,63 +67,96 @@ fun WidgetDesignerScreen(
         previewItems = viewModel.getItemsForWidget(config)
     }
 
-    var selectedTabIndex by remember { mutableIntStateOf(0) } // Default to Content & Live Rich Text Styler tab
-    val tabs = listOf("المحتوى والتحرير الحر", "تنسيق الخطوط", "الألوان", "الهيكل", "التناوب")
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("المحتوى والتحديد", "الخط والمقاس", "التحكم بالألوان", "الهيكل والزوايا", "التناوب والتحديث")
 
     val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("مصمم الودجت - Live Designer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("استوديو تصميم الودجت", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                        Text("NEUMORPHIC LIVE DESIGNER", fontSize = 9.sp, letterSpacing = 1.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.SemiBold)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع", tint = Color(0xFFF0F6FC))
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.triggerWidgetRefreshBroadcast(config.appWidgetId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "تحديث المعاينة")
+                        Icon(Icons.Default.Refresh, contentDescription = "تحديث المعاينة", tint = Color(0xFF00E5FF))
                     }
                     Button(
                         onClick = {
                             viewModel.saveWidgetConfig(config)
                             onBackClick()
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF00E5FF),
+                            contentColor = Color(0xFF0D1117)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("حفظ التعديلات")
+                        Text("حفظ التعديلات", fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D1117)
+                )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFF0D1117))
                 .padding(paddingValues)
         ) {
-            // Pinned Live Preview Area
-            Card(
+            // Floating Neumorphic Live Preview Pod
+            NeumorphicCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(26.dp),
+                glowColor = Color(0xFF00E5FF).copy(alpha = 0.3f)
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "معاينة مباشرة للودجت على شاشة الهاتف (Live Preview)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "المعاينة الحية للودجت بالخط المرفق الأساسي",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = AppCustomFontFamily,
+                            color = Color(0xFF8B949E)
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF00E5FF).copy(alpha = 0.18f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF))
+                        ) {
+                            Text(
+                                text = "LIVE FONT PREVIEW ⚡",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF00E5FF),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
 
                     val categoryName = remember(config.categoryId, categories) {
                         categories.find { it.id == config.categoryId }?.name ?: "الكل"
@@ -143,13 +176,19 @@ fun WidgetDesignerScreen(
                 }
             }
 
-            // Custom Tab Navigation for Design Settings
-            TabRow(selectedTabIndex = selectedTabIndex) {
+            // Interactive Tab Navigation Row with Soft Pills
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = { Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                    NeumorphicPillButton(
+                        text = title,
+                        isSelected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index }
                     )
                 }
             }
@@ -160,11 +199,11 @@ fun WidgetDesignerScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(scrollState)
-                .padding(16.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 when (selectedTabIndex) {
-                    0 -> ContentSourceAndLiveEditorTab(
+                    0 -> ContentSourceAndSelectionTab(
                         config = config,
                         categories = categories,
                         contentItems = contentItems,
@@ -172,7 +211,7 @@ fun WidgetDesignerScreen(
                         onUpdateItem = { viewModel.updateContentItem(it) },
                         onUpdateConfig = { config = it }
                     )
-                    1 -> TypographyTab(
+                    1 -> TypographyAndDialTab(
                         config = config,
                         customFonts = customFonts,
                         onPickCustomFont = { fontPickerLauncher.launch("*/*") },
@@ -206,9 +245,8 @@ private fun getFileNameFromUri(context: Context, uri: Uri): String {
     return name
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ContentSourceAndLiveEditorTab(
+private fun ContentSourceAndSelectionTab(
     config: WidgetConfigEntity,
     categories: List<CategoryEntity>,
     contentItems: List<ContentItemEntity>,
@@ -216,7 +254,6 @@ private fun ContentSourceAndLiveEditorTab(
     onUpdateItem: (ContentItemEntity) -> Unit,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
-    // Determine active item to edit in place
     val activeItem = remember(previewItems, config.currentContentIndex, config.singleContentId) {
         if (previewItems.isNotEmpty()) {
             val safeIdx = (config.currentContentIndex % previewItems.size).let { if (it < 0) it + previewItems.size else it }
@@ -237,70 +274,117 @@ private fun ContentSourceAndLiveEditorTab(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        
-        // --- 1. Live In-Place Granular Text Designer Section ---
-        Card(
+        // Selection & Granular Control of What Shows on Widget
+        NeumorphicCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+            shape = RoundedCornerShape(22.dp),
+            glowColor = Color(0xFF00E5FF).copy(alpha = 0.2f)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.FilterList, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("التحرير والتصميم الحر للنص المعروض", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = "معاينة وتعديل فوري ⚡",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                        )
+                        Text("التحكم بما يعرض على هذا الودجت", fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     }
                 }
 
-                Text(
-                    text = "حدد أي كلمة أو سطر بالأسفل لتغيير لونه أو حجمه أو اتجاهه أو تمييزه بحرية تامة دون التأثير على باقي النص:",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("حدد نمط عرض المحتوى للودجت:", fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E))
+                
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NeumorphicPillButton(
+                        text = "تصنيف كامل",
+                        isSelected = config.contentMode == "CATEGORY_ALL",
+                        onClick = { onUpdateConfig(config.copy(contentMode = "CATEGORY_ALL")) }
+                    )
+                    NeumorphicPillButton(
+                        text = "نص واحد محدد",
+                        isSelected = config.contentMode == "SINGLE",
+                        onClick = { onUpdateConfig(config.copy(contentMode = "SINGLE")) }
+                    )
+                }
 
-                // Quick Item Switcher if multiple items exist
-                if (previewItems.size > 1) {
-                    Text("اختر النص للتعديل السريع:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                if (config.contentMode == "CATEGORY_ALL") {
+                    Text("اختر التصنيف المخصص للودجت:", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        previewItems.forEachIndexed { index, item ->
-                            val isCurrent = selectedItemForEdit?.id == item.id
+                        FilterChip(
+                            selected = config.categoryId == null,
+                            onClick = { onUpdateConfig(config.copy(categoryId = null)) },
+                            label = { Text("جميع التصنيفات", fontFamily = AppCustomFontFamily) }
+                        )
+                        categories.forEach { cat ->
                             FilterChip(
-                                selected = isCurrent,
-                                onClick = {
-                                    selectedItemForEdit = item
-                                    onUpdateConfig(config.copy(currentContentIndex = index))
-                                },
-                                label = {
-                                    Text(
-                                        text = item.title.ifEmpty { "نص #${index + 1}" },
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
+                                selected = config.categoryId == cat.id,
+                                onClick = { onUpdateConfig(config.copy(categoryId = cat.id)) },
+                                label = { Text(cat.name, fontFamily = AppCustomFontFamily) }
                             )
                         }
+                    }
+                }
+
+                if (config.contentMode == "SINGLE") {
+                    Text("اختر النص الثابت من القائمة:", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        contentItems.forEach { item ->
+                            val isSelected = config.singleContentId == item.id
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color(0xFF161B22)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) }
+                                    )
+                                    Text(
+                                        text = item.title.ifEmpty { item.body.take(45) + "..." },
+                                        fontSize = 12.sp,
+                                        fontFamily = AppCustomFontFamily,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) Color(0xFF00E5FF) else Color(0xFFF0F6FC)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Live In-Place Granular Text Designer Section
+        NeumorphicCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            glowColor = Color(0xFFA371F7).copy(alpha = 0.2f)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFFA371F7), modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("التحرير والتلوين الحر للنص المعروض", fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     }
                 }
 
@@ -310,7 +394,6 @@ private fun ContentSourceAndLiveEditorTab(
                     var bodyTextFieldValue by remember(currentItem.id) { mutableStateOf(TextFieldValue(currentItem.body)) }
                     var hasSavedFeedback by remember { mutableStateOf(false) }
 
-                    // Title Field
                     OutlinedTextField(
                         value = titleText,
                         onValueChange = { newTitle ->
@@ -319,13 +402,19 @@ private fun ContentSourceAndLiveEditorTab(
                             selectedItemForEdit = updated
                             onUpdateItem(updated)
                         },
-                        label = { Text("عنوان النص الفرعي (Title)") },
+                        label = { Text("عنوان النص الفرعي", fontFamily = AppCustomFontFamily) },
+                        shape = RoundedCornerShape(14.dp),
                         singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0D1117),
+                            unfocusedContainerColor = Color(0xFF0D1117),
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color(0xFF30363D)
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Body Field with Rich Text Editor
-                    Text("نص المحتوى (تحديد الكلمات للتنسيق المباشر):", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("نص المحتوى (تحديد الكلمات لتلوينها وتنسيقها):", fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                     OutlinedTextField(
                         value = bodyTextFieldValue,
                         onValueChange = { newBodyVal ->
@@ -334,13 +423,16 @@ private fun ContentSourceAndLiveEditorTab(
                             selectedItemForEdit = updated
                             onUpdateItem(updated)
                         },
-                        label = { Text("محتوى النص / الدعاء / الذكر") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 120.dp, max = 220.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF0D1117),
+                            unfocusedContainerColor = Color(0xFF0D1117),
+                            focusedBorderColor = Color(0xFF00E5FF),
+                            unfocusedBorderColor = Color(0xFF30363D)
+                        ),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 180.dp)
                     )
 
-                    // Rich Text Granular Toolbar attached directly under the body editor
                     GranularRichTextEditorToolbar(
                         textFieldValue = bodyTextFieldValue,
                         onValueChange = { newBodyVal ->
@@ -351,19 +443,13 @@ private fun ContentSourceAndLiveEditorTab(
                         }
                     )
 
-                    // Save and Confirm Button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (hasSavedFeedback) {
-                            Text(
-                                "✓ تم تطبيق وحفظ التعديلات على الودجت بنجاح",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("✓ تم الحفظ بنجاح", color = Color(0xFF00E5FF), fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily)
                         } else {
                             Spacer(modifier = Modifier.weight(1f))
                         }
@@ -373,103 +459,20 @@ private fun ContentSourceAndLiveEditorTab(
                                 val updated = currentItem.copy(title = titleText, body = bodyTextFieldValue.text)
                                 onUpdateItem(updated)
                                 hasSavedFeedback = true
-                            }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00E5FF),
+                                contentColor = Color(0xFF0D1117)
+                            ),
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("حفظ تعديل هذا النص", fontSize = 12.sp)
+                            Text("حفظ تعديل النص", fontSize = 12.sp, fontFamily = AppCustomFontFamily)
                         }
                     }
                 } ?: run {
-                    Text(
-                        "لا يوجد نص محدد حالياً، يرجى اختيار تصنيف أو إضافة نصوص من شاشة المحتوى والأذكار.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-
-        // --- 2. Widget Source Settings (Category / Single Content Mode) ---
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("إعدادات مصدر الودجت والاسم العام", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                
-                OutlinedTextField(
-                    value = config.name,
-                    onValueChange = { onUpdateConfig(config.copy(name = it)) },
-                    label = { Text("اسم الودجت في القائمة") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text("نمط عرض المحتوى", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = config.contentMode == "CATEGORY_ALL",
-                        onClick = { onUpdateConfig(config.copy(contentMode = "CATEGORY_ALL")) },
-                        label = { Text("تصنيف كامل (تناوب)") }
-                    )
-                    FilterChip(
-                        selected = config.contentMode == "SINGLE",
-                        onClick = { onUpdateConfig(config.copy(contentMode = "SINGLE")) },
-                        label = { Text("نص واحد ثابت") }
-                    )
-                }
-
-                if (config.contentMode == "CATEGORY_ALL") {
-                    Text("اختر التصنيف المخصص للودجت", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        FilterChip(
-                            selected = config.categoryId == null,
-                            onClick = { onUpdateConfig(config.copy(categoryId = null)) },
-                            label = { Text("جميع التصنيفات") }
-                        )
-                        categories.forEach { cat ->
-                            FilterChip(
-                                selected = config.categoryId == cat.id,
-                                onClick = { onUpdateConfig(config.copy(categoryId = cat.id)) },
-                                label = { Text(cat.name) }
-                            )
-                        }
-                    }
-                }
-
-                if (config.contentMode == "SINGLE") {
-                    Text("اختر النص الثابت من القائمة", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    val currentSingleItem = contentItems.find { it.id == config.singleContentId }
-                    Text(
-                        text = currentSingleItem?.title?.ifEmpty { currentSingleItem.body } ?: "لم يتم اختيار نص بعد",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 160.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        contentItems.forEach { item ->
-                            val isSelected = config.singleContentId == item.id
-                            ListItem(
-                                headlineContent = { Text(item.title.ifEmpty { item.body.take(30) + "..." }, fontSize = 12.sp) },
-                                leadingContent = {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = { onUpdateConfig(config.copy(singleContentId = item.id)) }
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
+                    Text("لا يوجد نص محدد حالياً للتعديل.", fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E))
                 }
             }
         }
@@ -477,7 +480,7 @@ private fun ContentSourceAndLiveEditorTab(
 }
 
 @Composable
-private fun TypographyTab(
+private fun TypographyAndDialTab(
     config: WidgetConfigEntity,
     customFonts: List<CustomFontEntity>,
     onPickCustomFont: () -> Unit,
@@ -485,272 +488,88 @@ private fun TypographyTab(
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        
-        // 1. Title Styling Section (تنسيق العنوان بشكل مستقل)
-        Card(
+        // Circular Dial Controller for Font Size
+        NeumorphicCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            shape = RoundedCornerShape(26.dp),
+            glowColor = Color(0xFF00E5FF).copy(alpha = 0.3f)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Title, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("تنسيق العنوان (Title)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-                    FilterChip(
-                        selected = config.showTitle,
-                        onClick = { onUpdateConfig(config.copy(showTitle = !config.showTitle)) },
-                        label = { Text(if (config.showTitle) "العنوان مفعّل" else "العنوان مخفي", fontSize = 10.sp) }
-                    )
-                }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "التحكم الدائري في مقاس الخط (Smart Dial)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    fontFamily = AppCustomFontFamily,
+                    color = Color(0xFFF0F6FC)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
 
-                if (config.showTitle) {
-                    // Title Font Size
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("حجم خط العنوان:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Text("${config.titleFontSize} sp", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    Slider(
-                        value = config.titleFontSize.toFloat(),
-                        onValueChange = { onUpdateConfig(config.copy(titleFontSize = it.toInt())) },
-                        valueRange = 10f..30f,
-                        steps = 20
-                    )
-
-                    // Title Alignment
-                    Text("محاذاة العنوان:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = config.titleAlignment == "RIGHT",
-                            onClick = { onUpdateConfig(config.copy(titleAlignment = "RIGHT")) },
-                            leadingIcon = { Icon(Icons.Default.FormatAlignRight, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            label = { Text("يمين") }
-                        )
-                        FilterChip(
-                            selected = config.titleAlignment == "CENTER",
-                            onClick = { onUpdateConfig(config.copy(titleAlignment = "CENTER")) },
-                            leadingIcon = { Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            label = { Text("وسط") }
-                        )
-                        FilterChip(
-                            selected = config.titleAlignment == "LEFT",
-                            onClick = { onUpdateConfig(config.copy(titleAlignment = "LEFT")) },
-                            leadingIcon = { Icon(Icons.Default.FormatAlignLeft, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            label = { Text("يسار") }
-                        )
-                    }
-
-                    // Title Weight
-                    Text("سُمك خط العنوان:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = config.titleFontWeight == "BOLD",
-                            onClick = { onUpdateConfig(config.copy(titleFontWeight = "BOLD")) },
-                            label = { Text("عريض (Bold)") }
-                        )
-                        FilterChip(
-                            selected = config.titleFontWeight == "NORMAL",
-                            onClick = { onUpdateConfig(config.copy(titleFontWeight = "NORMAL")) },
-                            label = { Text("عادي (Normal)") }
-                        )
-                    }
-
-                    // Title Color
-                    ColorPickerRow(
-                        label = "لون العنوان",
-                        selectedColorHex = config.titleColorHex,
-                        onColorSelected = { onUpdateConfig(config.copy(titleColorHex = it)) }
-                    )
-                }
-            }
-        }
-
-        // 2. Body Content Styling Section (تنسيق نص الدعاء والمحتوى بشكل مستقل)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("تنسيق نص الدعاء والذكر (Body Content)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-
-                // Body Font Size
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("حجم خط النص الأساسي:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text("${config.fontSize} sp", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-                Slider(
+                CircularDialSlider(
                     value = config.fontSize.toFloat(),
                     onValueChange = { onUpdateConfig(config.copy(fontSize = it.toInt())) },
-                    valueRange = 10f..32f,
-                    steps = 22
-                )
-
-                // Body Alignment
-                Text("محاذاة نص الدعاء:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = config.textAlignment == "RIGHT",
-                        onClick = { onUpdateConfig(config.copy(textAlignment = "RIGHT")) },
-                        leadingIcon = { Icon(Icons.Default.FormatAlignRight, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        label = { Text("يمين (RTL)") }
-                    )
-                    FilterChip(
-                        selected = config.textAlignment == "CENTER",
-                        onClick = { onUpdateConfig(config.copy(textAlignment = "CENTER")) },
-                        leadingIcon = { Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        label = { Text("وسط") }
-                    )
-                    FilterChip(
-                        selected = config.textAlignment == "LEFT",
-                        onClick = { onUpdateConfig(config.copy(textAlignment = "LEFT")) },
-                        leadingIcon = { Icon(Icons.Default.FormatAlignLeft, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        label = { Text("يسار") }
-                    )
-                }
-
-                // Body Color
-                ColorPickerRow(
-                    label = "لون النص الأساسي",
-                    selectedColorHex = config.textColorHex,
-                    onColorSelected = { onUpdateConfig(config.copy(textColorHex = it)) }
-                )
-
-                // Body Formatting Chips
-                Text("تأثيرات الخط:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = config.fontWeight == "BOLD",
-                        onClick = {
-                            val newWeight = if (config.fontWeight == "BOLD") "NORMAL" else "BOLD"
-                            onUpdateConfig(config.copy(fontWeight = newWeight))
-                        },
-                        label = { Text("عريض Bold") }
-                    )
-                    FilterChip(
-                        selected = config.isItalic,
-                        onClick = { onUpdateConfig(config.copy(isItalic = !config.isItalic)) },
-                        label = { Text("مائل Italic") }
-                    )
-                    FilterChip(
-                        selected = config.isUnderline,
-                        onClick = { onUpdateConfig(config.copy(isUnderline = !config.isUnderline)) },
-                        label = { Text("سطر سفلي") }
-                    )
-                }
-
-                HorizontalDivider()
-
-                // Line Spacing
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("تباعد الأسطر:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Text("${String.format(java.util.Locale.US, "%.1f", config.lineSpacing)}x", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
-                Slider(
-                    value = config.lineSpacing,
-                    onValueChange = { onUpdateConfig(config.copy(lineSpacing = it)) },
-                    valueRange = 0.9f..2.5f,
-                    steps = 15
-                )
-
-                // Letter Spacing
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("تباعد الحروف:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Text("${String.format(java.util.Locale.US, "%.1f", config.letterSpacing)}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
-                Slider(
-                    value = config.letterSpacing,
-                    onValueChange = { onUpdateConfig(config.copy(letterSpacing = it)) },
-                    valueRange = -1.0f..3.0f,
-                    steps = 8
+                    valueRange = 10f..38f,
+                    unit = "sp",
+                    title = "حجم الخط",
+                    subtitle = "اسحب لتكبير وتصغير الخط مباشرة"
                 )
             }
         }
 
-        // 3. Font Family Section (نوع الخط والخطوط المستوردة)
-        Card(
+        // Font Family Selection
+        NeumorphicCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            shape = RoundedCornerShape(22.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.FontDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.FontDownload, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("نوع الخط (Font Family)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("نوع الخط (Font Family)", fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                 }
 
-                // Built-in Arabic fonts
-                Text("الخطوط المدمجة الأساسية:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 val fontFamilies = listOf(
-                    "TAJAWAL" to "تجول (Tajawal)",
+                    "DEFAULT" to "الخط المرفق الأساسي (Default F5 / Tajawal)",
                     "CAIRO" to "القاهرة (Cairo)",
                     "AMIRI" to "الأميري (Amiri)",
-                    "NOTO_KUFI" to "كوفي (Noto Kufi)",
-                    "DEFAULT" to "الافتراضي"
+                    "NOTO_KUFI" to "كوفي (Noto Kufi)"
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     fontFamilies.forEach { (key, label) ->
                         FilterChip(
-                            selected = config.fontFamily == key && config.customFontPath.isNullOrBlank(),
+                            selected = (config.fontFamily == key || (key == "DEFAULT" && config.fontFamily == "TAJAWAL")) && config.customFontPath.isNullOrBlank(),
                             onClick = { onUpdateConfig(config.copy(fontFamily = key, customFontPath = null)) },
-                            label = { Text(label, fontSize = 10.sp) }
+                            label = { Text(label, fontSize = 11.sp, fontFamily = AppCustomFontFamily) }
                         )
                     }
                 }
 
-                HorizontalDivider()
+                HorizontalDivider(color = Color(0xFF30363D))
 
-                // Custom Imported Fonts Section
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("الخطوط المخصصة من جهازك:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                        Text("استيراد أي خط بصيغة TTF أو OTF", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("الخطوط المخصصة من الهاتف:", fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                        Text("استيراد خطوط TTF أو OTF مباشرة", fontSize = 10.sp, fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E))
                     }
                     FilledTonalButton(
                         onClick = onPickCustomFont,
-                        shape = RoundedCornerShape(8.dp)
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFF21262D)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF00E5FF))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("إضافة خط من الهاتف", fontSize = 11.sp)
+                        Text("إضافة خط من الهاتف", fontSize = 11.sp, fontFamily = AppCustomFontFamily, color = Color(0xFF00E5FF))
                     }
                 }
 
@@ -758,57 +577,34 @@ private fun TypographyTab(
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         customFonts.forEach { font ->
                             val isSelected = config.customFontPath == font.filePath
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                                ),
-                                shape = RoundedCornerShape(8.dp),
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color(0xFF161B22),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) Color(0xFF00E5FF) else Color(0xFF30363D)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
                                         RadioButton(
                                             selected = isSelected,
-                                            onClick = {
-                                                onUpdateConfig(config.copy(fontFamily = "CUSTOM", customFontPath = font.filePath))
-                                            }
+                                            onClick = { onUpdateConfig(config.copy(fontFamily = "CUSTOM", customFontPath = font.filePath)) }
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
                                         Column {
-                                            Text(font.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                            Text(font.fileName, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(font.name, fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
+                                            Text(font.fileName, fontSize = 10.sp, fontFamily = AppCustomFontFamily, color = Color(0xFF8B949E))
                                         }
                                     }
-
-                                    IconButton(
-                                        onClick = {
-                                            if (isSelected) {
-                                                onUpdateConfig(config.copy(fontFamily = "TAJAWAL", customFontPath = null))
-                                            }
-                                            onDeleteCustomFont(font)
-                                        }
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "حذف الخط", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                    IconButton(onClick = { onDeleteCustomFont(font) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "حذف", tint = Color(0xFFF85149), modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }
                         }
                     }
-                } else {
-                    Text(
-                        "لم تقم باستيراد خطوط من الجهاز بعد. اضغط على 'إضافة خط من الهاتف' لاختيار أي ملف خط .ttf أو .otf من جهازك.",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -820,72 +616,56 @@ private fun ColorsTab(
     config: WidgetConfigEntity,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    NeumorphicCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ColorPickerRow(
-                label = "لون خلفية الودجت",
+                label = "لون خلفية الودجت الأساسي",
                 selectedColorHex = config.backgroundColorHex,
                 onColorSelected = { onUpdateConfig(config.copy(backgroundColorHex = it, gradientStartColorHex = it, gradientEndColorHex = it)) }
             )
 
             // Transparency / Opacity Section
-            Text("شفافية الخلفية (الدرجة: ${(config.backgroundOpacity * 100).toInt()}%)", fontWeight = FontWeight.Bold)
-            val opacityPresets = listOf(
-                0.0f to "شفاف (0%)",
-                0.3f to "خفيف (30%)",
-                0.6f to "متوسط (60%)",
-                0.85f to "داكن (85%)",
-                1.0f to "معتم (100%)"
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                opacityPresets.forEach { (alphaVal, label) ->
-                    FilterChip(
-                        selected = kotlin.math.abs(config.backgroundOpacity - alphaVal) < 0.05f,
-                        onClick = { onUpdateConfig(config.copy(backgroundOpacity = alphaVal)) },
-                        label = { Text(label, fontSize = 10.sp) }
-                    )
-                }
-            }
+            Text("شفافية الخلفية (${(config.backgroundOpacity * 100).toInt()}%)", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
             Slider(
                 value = config.backgroundOpacity,
                 onValueChange = { onUpdateConfig(config.copy(backgroundOpacity = it)) },
                 valueRange = 0f..1f
             )
 
-            HorizontalDivider()
+            HorizontalDivider(color = Color(0xFF30363D))
 
             ColorPickerRow(
-                label = "لون النص الرئيسي (Body)",
+                label = "لون النص الرئيسي (Body Text)",
                 selectedColorHex = config.textColorHex,
                 onColorSelected = { onUpdateConfig(config.copy(textColorHex = it)) }
             )
 
-            HorizontalDivider()
+            HorizontalDivider(color = Color(0xFF30363D))
 
             ColorPickerRow(
-                label = "لون عنوان الودجت (Title)",
+                label = "لون عنوان الودجت (Title Color)",
                 selectedColorHex = config.titleColorHex,
                 onColorSelected = { onUpdateConfig(config.copy(titleColorHex = it)) }
             )
 
-            HorizontalDivider()
+            HorizontalDivider(color = Color(0xFF30363D))
 
-            Text("نمط التدرج (Gradient)", fontWeight = FontWeight.Bold)
+            Text("نمط التدرج الضوئي (Gradient Style):", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = config.gradientDirection == "NONE",
                     onClick = { onUpdateConfig(config.copy(gradientDirection = "NONE")) },
-                    label = { Text("بدون تدرج") }
+                    label = { Text("بدون تدرج", fontFamily = AppCustomFontFamily) }
                 )
                 FilterChip(
                     selected = config.gradientDirection == "TOP_BOTTOM",
                     onClick = { onUpdateConfig(config.copy(gradientDirection = "TOP_BOTTOM")) },
-                    label = { Text("من الأعلى للأسفل") }
+                    label = { Text("رأسي متوهج", fontFamily = AppCustomFontFamily) }
                 )
                 FilterChip(
                     selected = config.gradientDirection == "LEFT_RIGHT",
                     onClick = { onUpdateConfig(config.copy(gradientDirection = "LEFT_RIGHT")) },
-                    label = { Text("من اليمين لليسار") }
+                    label = { Text("أفقي ناعم", fontFamily = AppCustomFontFamily) }
                 )
             }
 
@@ -905,48 +685,32 @@ private fun LayoutAndBordersTab(
     config: WidgetConfigEntity,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    NeumorphicCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             // Widget Lock Feature
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (config.isLocked)
-                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                    else
-                        MaterialTheme.colorScheme.surfaceVariant
-                ),
-                shape = RoundedCornerShape(12.dp)
+            Surface(
+                color = if (config.isLocked) Color(0xFF491C1C) else Color(0xFF161B22),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (config.isLocked) Color(0xFFF85149) else Color(0xFF30363D))
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = if (config.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                                contentDescription = null,
-                                tint = if (config.isLocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (config.isLocked) "الودجت مقفول (Locked)" else "قفل الويدجت من الفتح",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (config.isLocked)
-                                "مفعّل: عند الضغط على الودجت في الشاشة الرئيسية لن يتم فتح إعدادات التصميم أو التطبيق."
-                            else
-                                "عند التفعيل، لن يؤدي الضغط على الودجت في الشاشة الرئيسية لفتح التطبيق أو إعدادات التصميم.",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = if (config.isLocked) "الودجت مقفول (Locked) 🔒" else "قفل الويدجت من الفتح 🔓",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            fontFamily = AppCustomFontFamily,
+                            color = Color(0xFFF0F6FC)
+                        )
+                        Text(
+                            text = "منع فتح التطبيق أو إعدادات التصميم عند الضغط على الودجت في الشاشة الرئيسية.",
+                            fontSize = 10.sp,
+                            fontFamily = AppCustomFontFamily,
+                            color = Color(0xFF8B949E)
                         )
                     }
                     Switch(
@@ -956,46 +720,27 @@ private fun LayoutAndBordersTab(
                 }
             }
 
-            HorizontalDivider()
+            HorizontalDivider(color = Color(0xFF30363D))
 
-            Text("انحناء الزوايا (Corner Radius: ${config.cornerRadius} dp)", fontWeight = FontWeight.Bold)
+            Text("انحناء الزوايا (Corner Radius: ${config.cornerRadius} dp)", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
             Slider(
                 value = config.cornerRadius.toFloat(),
                 onValueChange = { onUpdateConfig(config.copy(cornerRadius = it.toInt())) },
-                valueRange = 0f..32f
+                valueRange = 0f..36f
             )
 
-            Text("الهامش الداخلي (Padding: ${config.padding} dp)", fontWeight = FontWeight.Bold)
+            Text("الهامش الداخلي (Padding: ${config.padding} dp)", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
             Slider(
                 value = config.padding.toFloat(),
                 onValueChange = { onUpdateConfig(config.copy(padding = it.toInt())) },
-                valueRange = 4f..24f
+                valueRange = 4f..28f
             )
 
             ColorPickerRow(
-                label = "لون إطار الودجت",
+                label = "لون إطار الودجت والتوهج",
                 selectedColorHex = config.borderColorHex,
                 onColorSelected = { onUpdateConfig(config.copy(borderColorHex = it)) }
             )
-
-            Text("عناصر العرض في الودجت", fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = config.showTitle,
-                    onClick = { onUpdateConfig(config.copy(showTitle = !config.showTitle)) },
-                    label = { Text("إظهار العنوان") }
-                )
-                FilterChip(
-                    selected = config.showCategory,
-                    onClick = { onUpdateConfig(config.copy(showCategory = !config.showCategory)) },
-                    label = { Text("إظهار التصنيف") }
-                )
-                FilterChip(
-                    selected = config.showDate,
-                    onClick = { onUpdateConfig(config.copy(showDate = !config.showDate)) },
-                    label = { Text("إظهار التاريخ") }
-                )
-            }
         }
     }
 }
@@ -1005,29 +750,29 @@ private fun RotationAndUpdatesTab(
     config: WidgetConfigEntity,
     onUpdateConfig: (WidgetConfigEntity) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("طريقة تناوب وتغيير المحتوى", fontWeight = FontWeight.Bold)
+    NeumorphicCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("طريقة تناوب وتغيير المحتوى", fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = config.rotationMode == "MANUAL",
                     onClick = { onUpdateConfig(config.copy(rotationMode = "MANUAL")) },
-                    label = { Text("يدوي (عند الضغط ⟳)") }
+                    label = { Text("يدوي (عند الضغط ⟳)", fontFamily = AppCustomFontFamily) }
                 )
                 FilterChip(
                     selected = config.rotationMode == "SEQUENTIAL",
                     onClick = { onUpdateConfig(config.copy(rotationMode = "SEQUENTIAL")) },
-                    label = { Text("تتابعي تلقائي") }
+                    label = { Text("تتابعي تلقائي", fontFamily = AppCustomFontFamily) }
                 )
                 FilterChip(
                     selected = config.rotationMode == "RANDOM",
                     onClick = { onUpdateConfig(config.copy(rotationMode = "RANDOM")) },
-                    label = { Text("عشوائي") }
+                    label = { Text("عشوائي", fontFamily = AppCustomFontFamily) }
                 )
             }
 
             if (config.rotationMode != "MANUAL") {
-                Text("فترة التحديث التلقائي", fontWeight = FontWeight.Bold)
+                Text("فترة التحديث التلقائي:", fontWeight = FontWeight.Bold, fontSize = 12.sp, fontFamily = AppCustomFontFamily, color = Color(0xFFF0F6FC))
                 val intervals = listOf(
                     15 to "15 دقيقة",
                     30 to "30 دقيقة",
@@ -1040,7 +785,7 @@ private fun RotationAndUpdatesTab(
                         FilterChip(
                             selected = config.rotationIntervalMinutes == mins,
                             onClick = { onUpdateConfig(config.copy(rotationIntervalMinutes = mins)) },
-                            label = { Text(label, fontSize = 11.sp) }
+                            label = { Text(label, fontSize = 11.sp, fontFamily = AppCustomFontFamily) }
                         )
                     }
                 }

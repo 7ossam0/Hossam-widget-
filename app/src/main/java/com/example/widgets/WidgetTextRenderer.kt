@@ -11,6 +11,8 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
+import androidx.core.content.res.ResourcesCompat
+import com.example.R
 import com.example.data.model.WidgetConfigEntity
 import java.io.File
 
@@ -33,10 +35,10 @@ object WidgetTextRenderer {
         val borderWidth = (config.borderWidth * density).coerceAtLeast(0f)
 
         // Parse colors
-        val bgColor = try { Color.parseColor(config.backgroundColorHex) } catch (e: Exception) { Color.parseColor("#1E293B") }
+        val bgColor = try { Color.parseColor(config.backgroundColorHex) } catch (e: Exception) { Color.parseColor("#161B22") }
         val startColor = try { Color.parseColor(config.gradientStartColorHex) } catch (e: Exception) { bgColor }
         val endColor = try { Color.parseColor(config.gradientEndColorHex) } catch (e: Exception) { bgColor }
-        val borderColor = try { Color.parseColor(config.borderColorHex) } catch (e: Exception) { Color.parseColor("#33FFFFFF") }
+        val borderColor = try { Color.parseColor(config.borderColorHex) } catch (e: Exception) { Color.parseColor("#3300E5FF") }
 
         val alpha = (config.backgroundOpacity.coerceIn(0f, 1f) * 255).toInt()
 
@@ -70,57 +72,72 @@ object WidgetTextRenderer {
                     startColorWithAlpha, endColorWithAlpha,
                     android.graphics.Shader.TileMode.CLAMP
                 )
-                else -> {
-                    color = applyAlpha(bgColor, alpha)
-                    null
-                }
+                else -> android.graphics.LinearGradient(
+                    0f, 0f, width.toFloat(), height.toFloat(),
+                    startColorWithAlpha, startColorWithAlpha,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
             }
         }
 
-        val rectF = android.graphics.RectF(
+        val rect = android.graphics.RectF(
             borderWidth / 2f,
             borderWidth / 2f,
-            width.toFloat() - borderWidth / 2f,
-            height.toFloat() - borderWidth / 2f
+            width - borderWidth / 2f,
+            height - borderWidth / 2f
         )
 
-        // Draw background shape
-        canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, fillPaint)
+        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, fillPaint)
 
-        // Draw border if width > 0
-        if (borderWidth > 0f) {
+        // Draw Border
+        if (config.borderWidth > 0) {
             val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = borderWidth
                 color = borderColor
             }
-            canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, strokePaint)
+            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, strokePaint)
         }
 
         return bitmap
     }
 
-    fun getTypeface(config: WidgetConfigEntity, isBold: Boolean = false, isItalic: Boolean = false): Typeface {
-        // 1. Try Custom Font File
+    private fun getTypeface(
+        context: Context,
+        config: WidgetConfigEntity,
+        isBold: Boolean = false,
+        isItalic: Boolean = false
+    ): Typeface {
+        // 1. Check for custom imported font file
         if (!config.customFontPath.isNullOrBlank()) {
             try {
                 val file = File(config.customFontPath)
-                if (file.exists() && file.canRead()) {
-                    val baseTypeface = Typeface.createFromFile(file)
-                    val style = when {
-                        isItalic && isBold -> Typeface.BOLD_ITALIC
-                        isBold -> Typeface.BOLD
-                        isItalic -> Typeface.ITALIC
-                        else -> Typeface.NORMAL
-                    }
-                    return Typeface.create(baseTypeface, style)
+                if (file.exists()) {
+                    return Typeface.createFromFile(file)
                 }
-            } catch (e: Throwable) {
+            } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        // 2. Fallback to System/Named Typefaces
+        // 2. Default app font (Tajawal / F5 font loaded from res/font)
+        try {
+            val fontRes = if (isBold) R.font.app_font_bold else R.font.app_font
+            val tf = ResourcesCompat.getFont(context, fontRes)
+            if (tf != null) {
+                val style = when {
+                    isItalic && isBold -> Typeface.BOLD_ITALIC
+                    isBold -> Typeface.BOLD
+                    isItalic -> Typeface.ITALIC
+                    else -> Typeface.NORMAL
+                }
+                return Typeface.create(tf, style)
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
+        // 3. Fallback to System Typefaces
         val baseTypeface = when (config.fontFamily) {
             "CAIRO", "AMIRI" -> Typeface.SERIF
             "NOTO_KUFI", "TAJAWAL" -> Typeface.SANS_SERIF
@@ -151,6 +168,7 @@ object WidgetTextRenderer {
 
         // Body Typeface
         val bodyTypeface = getTypeface(
+            context = context,
             config = config,
             isBold = config.fontWeight == "BOLD",
             isItalic = config.isItalic
@@ -158,38 +176,37 @@ object WidgetTextRenderer {
 
         // Title Typeface
         val titleTypeface = getTypeface(
+            context = context,
             config = config,
             isBold = config.titleFontWeight == "BOLD",
             isItalic = false
         )
 
-        // Title Alignment
-        val titleAlignment = when (config.titleAlignment) {
-            "RIGHT" -> Layout.Alignment.ALIGN_NORMAL
-            "LEFT" -> Layout.Alignment.ALIGN_OPPOSITE
-            else -> Layout.Alignment.ALIGN_CENTER
-        }
-
-        // Body Alignment
-        val bodyAlignment = when (config.textAlignment) {
-            "RIGHT" -> Layout.Alignment.ALIGN_NORMAL
-            "LEFT" -> Layout.Alignment.ALIGN_OPPOSITE
-            else -> Layout.Alignment.ALIGN_CENTER
-        }
-
         val textDirection = TextDirectionHeuristics.RTL
+
+        val bodyAlignment = when (config.textAlignment) {
+            "LEFT" -> Layout.Alignment.ALIGN_NORMAL
+            "RIGHT" -> Layout.Alignment.ALIGN_OPPOSITE
+            else -> Layout.Alignment.ALIGN_CENTER
+        }
+
+        val titleAlignment = when (config.titleAlignment) {
+            "LEFT" -> Layout.Alignment.ALIGN_NORMAL
+            "RIGHT" -> Layout.Alignment.ALIGN_OPPOSITE
+            else -> Layout.Alignment.ALIGN_CENTER
+        }
 
         // Title Layout Setup
         var titleLayout: StaticLayout? = null
-        if (!title.isNullOrBlank() && config.showTitle) {
+        if (!title.isNullOrBlank()) {
             val spannedTitle = com.example.ui.components.RichTextHelper.htmlToSpanned(title)
             val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 this.typeface = titleTypeface
-                textSize = config.titleFontSize * scaledDensity
+                textSize = (config.fontSize + 2) * scaledDensity
                 try {
                     color = Color.parseColor(config.titleColorHex)
                 } catch (e: Exception) {
-                    color = Color.parseColor("#F59E0B")
+                    color = Color.parseColor("#00E5FF")
                 }
                 if (config.isUnderline) {
                     flags = flags or Paint.UNDERLINE_TEXT_FLAG
