@@ -12,18 +12,11 @@ class WidgetStudioApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize Notification Channels
+        // Initialize Notification Channels safely
         try {
             com.example.services.PrayerNotificationHelper.createNotificationChannels(this)
         } catch (e: Throwable) {
             Log.e("WidgetStudio", "Error creating notification channels", e)
-        }
-
-        // Global crash guard to prevent unexpected shutdowns
-        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("WidgetStudio", "Uncaught exception in thread ${thread.name}", throwable)
-            defaultHandler?.uncaughtException(thread, throwable)
         }
 
         // Warm up database in background

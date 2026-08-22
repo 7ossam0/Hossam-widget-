@@ -90,11 +90,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WidgetStudioApp(
-    viewModel: MainViewModel = viewModel(
-        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
-            LocalContext.current.applicationContext as Application
-        )
-    )
+    viewModel: MainViewModel
 ) {
     val navController = rememberNavController()
     var activeDesignerConfig by remember { mutableStateOf<WidgetConfigEntity?>(null) }

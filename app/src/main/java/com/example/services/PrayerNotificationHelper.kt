@@ -33,51 +33,64 @@ object PrayerNotificationHelper {
     const val EXTRA_PRAYER_TIME = "extra_prayer_time"
 
     fun createNotificationChannels(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
-            val audioAttributes = AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .build()
+                val defaultSoundUri = try {
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                } catch (e: Throwable) {
+                    null
+                }
 
-            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                // 1. Prayer Channel (High importance, Sound & Vibration)
+                val prayerChannel = NotificationChannel(
+                    CHANNEL_PRAYER_ID,
+                    "مواقيت الصلاة والأذان 🕌",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "إشعارات دخول وقت الصلاة والأذان الشريف بصوت واضح"
+                    enableLights(true)
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 800)
+                    if (defaultSoundUri != null) {
+                        try {
+                            val audioAttributes = AudioAttributes.Builder()
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .setUsage(AudioAttributes.USAGE_ALARM)
+                                .build()
+                            setSound(defaultSoundUri, audioAttributes)
+                        } catch (e: Throwable) {
+                            // Fallback to default
+                        }
+                    }
+                    lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                }
 
-            // 1. Prayer Channel (High importance, Sound & Vibration)
-            val prayerChannel = NotificationChannel(
-                CHANNEL_PRAYER_ID,
-                "مواقيت الصلاة والأذان 🕌",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "إشعارات دخول وقت الصلاة والأذان الشريف بصوت واضح"
-                enableLights(true)
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 800)
-                setSound(defaultSoundUri, audioAttributes)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                // 2. Azkar & Dua Channel
+                val azkarChannel = NotificationChannel(
+                    CHANNEL_AZKAR_ID,
+                    "الأذكار والأدعية اليومية 📿",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "تنبيهات أذكار الصباح والمساء والأدعية المختارة"
+                    enableLights(true)
+                    enableVibration(true)
+                }
+
+                // 3. Tasbeeh Channel
+                val tasbeehChannel = NotificationChannel(
+                    CHANNEL_TASBEEH_ID,
+                    "تذكيرات المسبحة والورد اليومي ✨",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "تذكيرات خفيفة بالاستغفار والتسبيح"
+                }
+
+                notificationManager.createNotificationChannels(listOf(prayerChannel, azkarChannel, tasbeehChannel))
             }
-
-            // 2. Azkar & Dua Channel
-            val azkarChannel = NotificationChannel(
-                CHANNEL_AZKAR_ID,
-                "الأذكار والأدعية اليومية 📿",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "تنبيهات أذكار الصباح والمساء والأدعية المختارة"
-                enableLights(true)
-                enableVibration(true)
-            }
-
-            // 3. Tasbeeh Channel
-            val tasbeehChannel = NotificationChannel(
-                CHANNEL_TASBEEH_ID,
-                "تذكيرات المسبحة والورد اليومي ✨",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "تذكيرات خفيفة بالاستغفار والتسبيح"
-            }
-
-            notificationManager.createNotificationChannels(listOf(prayerChannel, azkarChannel, tasbeehChannel))
+        } catch (e: Throwable) {
+            Log.e("PrayerNotificationHelper", "Error in createNotificationChannels", e)
         }
     }
 
