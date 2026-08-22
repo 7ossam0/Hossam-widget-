@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,16 +26,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.audio.AudioStorageManager
+import com.example.data.audio.AudioType
+import com.example.data.audio.CustomAudioItem
 import com.example.data.prayer.CalculationMethod
 import com.example.data.prayer.CityLocation
 import com.example.data.prayer.PrayerTime
 import com.example.data.prayer.PrayerTimeCalculator
+import com.example.services.PrayerNotificationHelper
 import com.example.ui.components.DynamicCelestialSky
 import com.example.ui.components.GlassButton
 import com.example.ui.components.GlassCard
@@ -136,6 +146,11 @@ fun PrayerTimesScreen(
                         schedule = schedule,
                         cityName = selectedCity.cityName
                     )
+                }
+
+                // Adhan, Audio Upload & Notification Settings
+                item {
+                    AdhanAndNotificationSettingsCard()
                 }
             }
         }
@@ -746,4 +761,552 @@ private fun MethodSelectionDialog(
             }
         }
     )
+}
+
+@Composable
+private fun AdhanAndNotificationSettingsCard() {
+    val context = LocalContext.current
+    var isNotificationsEnabled by remember { mutableStateOf(AudioStorageManager.isPrayerNotificationsEnabled(context)) }
+    var isPrePrayerAlert by remember { mutableStateOf(AudioStorageManager.isPrePrayerAlertEnabled(context)) }
+    var selectedAdhanId by remember { mutableStateOf(AudioStorageManager.getSelectedAdhanId(context)) }
+    var selectedDuaId by remember { mutableStateOf(AudioStorageManager.getSelectedDuaId(context)) }
+    var audioList by remember { mutableStateOf(AudioStorageManager.getAudioList(context)) }
+    val currentlyPlayingId by AudioStorageManager.currentlyPlayingId.collectAsStateWithLifecycle()
+
+    var showUploadDialog by remember { mutableStateOf(false) }
+    var pendingUploadUri by remember { mutableStateOf<Uri?>(null) }
+    var uploadTargetType by remember { mutableStateOf(AudioType.ADHAN) }
+
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                pendingUploadUri = uri
+                showUploadDialog = true
+            }
+        }
+    )
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                Toast.makeText(context, "تم تفعيل صلاحية الإشعارات بنجاح ✅", Toast.LENGTH_SHORT).show()
+                PrayerNotificationHelper.scheduleNextPrayerAlarms(context)
+            } else {
+                Toast.makeText(context, "لم يتم منح صلاحية الإشعارات", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    val hasSystemPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        PrayerNotificationHelper.areNotificationsEnabled(context)
+    } else {
+        true
+    }
+
+    GlassCard(
+        borderBrush = GlassDefaults.accentBorderGradient(Color(0xFF00E5FF)),
+        backgroundBrush = Brush.verticalGradient(
+            listOf(
+                Color(0x3500E5FF),
+                Color(0x201E1B4B),
+                Color(0x250F172A)
+            )
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00E5FF).copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsActive,
+                            contentDescription = null,
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "الأذان والتنبيهات الصوتية والأدعية",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = "تخصيص نغمة الأذان ورفع ملفات MP3 للأدعية",
+                            color = Color(0xCCFFFFFF),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+
+            // Notification Permission Warning if not granted
+            if (!hasSystemPermission) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x33EF4444))
+                        .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFFF5252),
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "الإشعارات مغلقة في النظام - انقر لتفعيلها لتصلك مواقيت الأذان",
+                                color = Color.White,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("تفعيل 🔔", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Main Switches
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x22FFFFFF))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "تنبيهات دخول وقت الصلاة",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "إشعار وصوت عند حان وقت الأذان",
+                        color = Color(0xAAFFFFFF),
+                        fontSize = 11.sp
+                    )
+                }
+                Switch(
+                    checked = isNotificationsEnabled,
+                    onCheckedChange = {
+                        isNotificationsEnabled = it
+                        AudioStorageManager.setPrayerNotificationsEnabled(context, it)
+                        if (it) {
+                            PrayerNotificationHelper.scheduleNextPrayerAlarms(context)
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFF00E5FF)
+                    )
+                )
+            }
+
+            // Test Notification & Audio Button
+            Button(
+                onClick = {
+                    PrayerNotificationHelper.sendTestNotification(
+                        context,
+                        title = "تجربة الأذان والإشعار 🕌",
+                        body = "الله أكبر، الله أكبر - تم تفعيل نظام التنبيهات والأذان بنجاح"
+                    )
+                    Toast.makeText(context, "تم إرسال إشعار تجريبي وتشغيل الصوت 🔔", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.25f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayCircleFilled,
+                    contentDescription = null,
+                    tint = Color(0xFF00E5FF),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "تجربة إشعار الأذان والصوت الآن ⚡",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+            }
+
+            HorizontalDivider(color = Color(0x33FFFFFF), thickness = 1.dp)
+
+            // Section 1: Adhan Sound Selection & Custom Upload
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "صوت الأذان المختار 🔊",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD54F),
+                    fontSize = 14.sp
+                )
+
+                // Upload MP3 Button
+                Button(
+                    onClick = {
+                        uploadTargetType = AudioType.ADHAN
+                        audioPickerLauncher.launch("audio/*")
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD54F).copy(alpha = 0.25f)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.UploadFile,
+                        contentDescription = null,
+                        tint = Color(0xFFFFD54F),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "رفع ملف صوت أذان 📁",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Audio Items List for Adhan
+            val adhanAudios = audioList.filter { it.type == AudioType.ADHAN || it.type == AudioType.REMINDER }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                adhanAudios.forEach { audio ->
+                    val isSelected = audio.id == selectedAdhanId
+                    val isPlaying = audio.id == currentlyPlayingId
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) Color(0x3300E5FF) else Color(0x15FFFFFF))
+                            .border(
+                                1.dp,
+                                if (isSelected) Color(0xFF00E5FF) else Color.Transparent,
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable {
+                                selectedAdhanId = audio.id
+                                AudioStorageManager.setSelectedAdhanId(context, audio.id)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedAdhanId = audio.id
+                                    AudioStorageManager.setSelectedAdhanId(context, audio.id)
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    text = audio.title,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = Color.White,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = audio.description,
+                                    color = Color(0xAAFFFFFF),
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Play/Stop Preview Button
+                            IconButton(
+                                onClick = {
+                                    if (isPlaying) {
+                                        AudioStorageManager.stopAudio()
+                                    } else {
+                                        AudioStorageManager.playAudio(context, audio)
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Default.StopCircle else Icons.Default.PlayCircleFilled,
+                                    contentDescription = "استماع",
+                                    tint = if (isPlaying) Color(0xFFFF5252) else Color(0xFF00E5FF),
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+
+                            // Delete button if custom uploaded
+                            if (!audio.isBuiltIn) {
+                                IconButton(
+                                    onClick = {
+                                        AudioStorageManager.deleteCustomAudio(context, audio.id)
+                                        audioList = AudioStorageManager.getAudioList(context)
+                                        selectedAdhanId = AudioStorageManager.getSelectedAdhanId(context)
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = "حذف",
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(color = Color(0x33FFFFFF), thickness = 1.dp)
+
+            // Section 2: Dua & Azkar Audio Selector & Upload
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "صوت الأدعية والتسابيح 📿",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF10B981),
+                    fontSize = 14.sp
+                )
+
+                // Upload MP3 for Dua Button
+                Button(
+                    onClick = {
+                        uploadTargetType = AudioType.DUA
+                        audioPickerLauncher.launch("audio/*")
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981).copy(alpha = 0.25f)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.UploadFile,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "رفع ملف صوت دعاء 📁",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Audio Items List for Dua
+            val duaAudios = audioList.filter { it.type == AudioType.DUA }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                duaAudios.forEach { audio ->
+                    val isSelected = audio.id == selectedDuaId
+                    val isPlaying = audio.id == currentlyPlayingId
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) Color(0x3310B981) else Color(0x15FFFFFF))
+                            .border(
+                                1.dp,
+                                if (isSelected) Color(0xFF10B981) else Color.Transparent,
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable {
+                                selectedDuaId = audio.id
+                                AudioStorageManager.setSelectedDuaId(context, audio.id)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedDuaId = audio.id
+                                    AudioStorageManager.setSelectedDuaId(context, audio.id)
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF10B981))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    text = audio.title,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = Color.White,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = audio.description,
+                                    color = Color(0xAAFFFFFF),
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    if (isPlaying) {
+                                        AudioStorageManager.stopAudio()
+                                    } else {
+                                        AudioStorageManager.playAudio(context, audio)
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Default.StopCircle else Icons.Default.PlayCircleFilled,
+                                    contentDescription = "استماع",
+                                    tint = if (isPlaying) Color(0xFFFF5252) else Color(0xFF10B981),
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+
+                            if (!audio.isBuiltIn) {
+                                IconButton(
+                                    onClick = {
+                                        AudioStorageManager.deleteCustomAudio(context, audio.id)
+                                        audioList = AudioStorageManager.getAudioList(context)
+                                        selectedDuaId = AudioStorageManager.getSelectedDuaId(context)
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = "حذف",
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Upload Confirmation Dialog
+    if (showUploadDialog && pendingUploadUri != null) {
+        var customAudioTitle by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = {
+                showUploadDialog = false
+                pendingUploadUri = null
+            },
+            title = {
+                Text(
+                    text = if (uploadTargetType == AudioType.ADHAN) "حفظ ملف صوت الأذان 🕌" else "حفظ ملف صوت الدعاء 📿",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("تم اختيار الملف الصوتي بنجاح. يرجى كتابة اسم تعريفي له:")
+                    OutlinedTextField(
+                        value = customAudioTitle,
+                        onValueChange = { customAudioTitle = it },
+                        label = { Text("عنوان الملف الصوتي") },
+                        placeholder = { Text(if (uploadTargetType == AudioType.ADHAN) "مثال: أذان الشيخ عبد الباسط" else "مثال: دعاء كميل / دعاء الفرج") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val uri = pendingUploadUri
+                        if (uri != null) {
+                            val saved = AudioStorageManager.saveCustomAudio(
+                                context = context,
+                                uri = uri,
+                                customTitle = customAudioTitle,
+                                type = uploadTargetType
+                            )
+                            if (saved != null) {
+                                audioList = AudioStorageManager.getAudioList(context)
+                                if (uploadTargetType == AudioType.ADHAN) {
+                                    selectedAdhanId = saved.id
+                                } else {
+                                    selectedDuaId = saved.id
+                                }
+                                Toast.makeText(context, "تم حفظ الملف واختياره بنجاح ✨", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "فشل في حفظ الملف الصوتي", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        showUploadDialog = false
+                        pendingUploadUri = null
+                    }
+                ) {
+                    Text("حفظ واختيار")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showUploadDialog = false
+                        pendingUploadUri = null
+                    }
+                ) {
+                    Text("إلغاء")
+                }
+            }
+        )
+    }
 }

@@ -1,10 +1,13 @@
 package com.example
 
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +23,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.data.model.WidgetConfigEntity
+import com.example.services.PrayerNotificationHelper
 import com.example.ui.screens.*
 import com.example.ui.theme.WidgetStudioTheme
 import com.example.viewmodel.MainViewModel
@@ -35,8 +39,31 @@ class MainActivity : ComponentActivity() {
             // Fallback for older OEM customizations
         }
 
+        try {
+            PrayerNotificationHelper.createNotificationChannels(this)
+            PrayerNotificationHelper.scheduleNextPrayerAlarms(this)
+        } catch (e: Throwable) {
+            // Safe guard
+        }
+
         setContent {
             WidgetStudioTheme {
+                // Request Notification Permission on Android 13+ (API 33+)
+                val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission(),
+                    onResult = { isGranted ->
+                        if (isGranted) {
+                            PrayerNotificationHelper.scheduleNextPrayerAlarms(this@MainActivity)
+                        }
+                    }
+                )
+
+                LaunchedEffect(Unit) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
