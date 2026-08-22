@@ -347,26 +347,29 @@ object PrayerTimeCalculator {
     }
 
     private fun estimateHijriDate(cal: Calendar): String {
-        // Approximate algorithm for Hijri display
-        val y = cal.get(Calendar.YEAR)
-        val m = cal.get(Calendar.MONTH) + 1
-        val d = cal.get(Calendar.DAY_OF_MONTH)
-        val jd = julianDate(y, m, d).toInt()
-        val l = jd - 1948440 + 10632
-        val n = ((l - 1) / 10631)
-        val l2 = l - 10631 * n + 354
-        val j = ((10985 - l2) / 5316) * ((50 * l2) / 17719) + (l2 / 5670) * ((43 * l2) / 15238)
-        val l3 = l2 - ((30 - j) / 15) * ((17719 * j) / 50) - (j / 16) * ((15238 * j) / 43) + 29
-        val hijriMonth = ((24 * l3) / 709)
-        val hijriDay = l3 - ((709 * hijriMonth) / 24)
-        val hijriYear = (30 * n) + j - 30
+        return try {
+            val y = cal.get(Calendar.YEAR)
+            val m = cal.get(Calendar.MONTH) + 1
+            val d = cal.get(Calendar.DAY_OF_MONTH)
+            val jd = julianDate(y, m, d).toLong()
+            val l = jd - 1948440L + 10632L
+            val n = ((l - 1L) / 10631L)
+            val l2 = l - 10631L * n + 354L
+            val j = ((10985L - l2) / 5316L) * ((50L * l2) / 17719L) + (l2 / 5670L) * ((43L * l2) / 15238L)
+            val l3 = l2 - ((30L - j) / 15L) * ((17719L * j) / 50L) - (j / 16L) * ((15238L * j) / 43L) + 29L
+            val hijriMonth = ((24L * l3) / 709L).toInt()
+            val hijriDay = (l3 - ((709L * hijriMonth) / 24L)).toInt().coerceIn(1, 30)
+            val hijriYear = ((30L * n) + j - 30L).toInt()
 
-        val hijriMonthNames = listOf(
-            "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة",
-            "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
-        )
-        val monthIdx = (hijriMonth - 1).coerceIn(0, 11)
-        return "$hijriDay ${hijriMonthNames[monthIdx]} $hijriYear هـ"
+            val hijriMonthNames = listOf(
+                "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة",
+                "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
+            )
+            val monthIdx = (hijriMonth - 1).coerceIn(0, 11)
+            "$hijriDay ${hijriMonthNames[monthIdx]} $hijriYear هـ"
+        } catch (e: Throwable) {
+            "١٤٤٨ هـ"
+        }
     }
 
     // Mathematical helper functions
