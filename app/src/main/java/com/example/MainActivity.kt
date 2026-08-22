@@ -25,9 +25,7 @@ import com.example.ui.theme.WidgetStudioTheme
 import com.example.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
-    private val mainViewModel: MainViewModel by viewModels {
-        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
-    }
+    private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

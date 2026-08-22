@@ -28,19 +28,27 @@ class TasbeehAppWidgetProvider : AppWidgetProvider() {
             ACTION_TASBEEH_INCREMENT -> {
                 val db = AppDatabase.getInstance(context)
                 CoroutineScope(Dispatchers.IO).launch {
-                    val active = db.tasbeehDao().getActiveTasbeeh() ?: db.tasbeehDao().getFirstTasbeeh()
-                    val targetId = active?.id ?: 1L
-                    db.tasbeehDao().incrementCount(targetId)
-                    updateTasbeehWidgets(context)
+                    try {
+                        val active = db.tasbeehDao().getActiveTasbeeh() ?: db.tasbeehDao().getFirstTasbeeh()
+                        val targetId = active?.id ?: 1L
+                        db.tasbeehDao().incrementCount(targetId)
+                        updateTasbeehWidgets(context)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
             ACTION_TASBEEH_RESET -> {
                 val db = AppDatabase.getInstance(context)
                 CoroutineScope(Dispatchers.IO).launch {
-                    val active = db.tasbeehDao().getActiveTasbeeh() ?: db.tasbeehDao().getFirstTasbeeh()
-                    val targetId = active?.id ?: 1L
-                    db.tasbeehDao().resetCount(targetId)
-                    updateTasbeehWidgets(context)
+                    try {
+                        val active = db.tasbeehDao().getActiveTasbeeh() ?: db.tasbeehDao().getFirstTasbeeh()
+                        val targetId = active?.id ?: 1L
+                        db.tasbeehDao().resetCount(targetId)
+                        updateTasbeehWidgets(context)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }
