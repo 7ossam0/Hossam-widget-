@@ -113,23 +113,49 @@ fun WidgetStudioApp(
         NavigationItem("ai_wisdom", "بيان الذكي", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome)
     )
 
-    val showBottomBar = currentRoute in listOf("home", "quran", "qibla", "tasks", "ai_wisdom")
+    val showBottomBar = currentRoute != "designer"
+
+    val navigateBackOrHome: () -> Unit = {
+        if (!navController.popBackStack()) {
+            navController.navigate("home") {
+                popUpTo("home") { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = androidx.compose.ui.graphics.Color(0xFF0D1420),
                     tonalElevation = 8.dp
                 ) {
                     bottomNavItems.forEach { item ->
-                        val selected = currentRoute == item.route
+                        val selected = when (item.route) {
+                            "home" -> currentRoute in listOf("home", "prayer", "tasbeeh", "content", "categories", "backup", null)
+                            else -> currentRoute == item.route
+                        }
                         NavigationBarItem(
                             selected = selected,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = androidx.compose.ui.graphics.Color(0xFF090D14),
+                                selectedTextColor = androidx.compose.ui.graphics.Color(0xFFE5C07B),
+                                indicatorColor = androidx.compose.ui.graphics.Color(0xFFE5C07B),
+                                unselectedIconColor = androidx.compose.ui.graphics.Color(0x99FFFFFF),
+                                unselectedTextColor = androidx.compose.ui.graphics.Color(0x77FFFFFF)
+                            ),
                             onClick = {
-                                if (currentRoute != item.route) {
+                                if (item.route == "home") {
+                                    navController.navigate("home") {
+                                        popUpTo("home") {
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
+                                    }
+                                } else if (currentRoute != item.route) {
                                     navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
+                                        popUpTo("home") {
                                             saveState = true
                                         }
                                         launchSingleTop = true
@@ -184,42 +210,42 @@ fun WidgetStudioApp(
                 composable("quran") {
                     QuranScreen(
                         viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = navigateBackOrHome
                     )
                 }
 
                 composable("qibla") {
                     QiblaARScreen(
                         viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = navigateBackOrHome
                     )
                 }
 
                 composable("tasks") {
                     SpiritualTasksScreen(
                         viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = navigateBackOrHome
                     )
                 }
 
                 composable("ai_wisdom") {
                     AiWisdomScreen(
                         viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = navigateBackOrHome
                     )
                 }
 
                 composable("prayer") {
                     PrayerTimesScreen(
                         viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = navigateBackOrHome
                     )
                 }
 
                 composable("tasbeeh") {
                     TasbeehScreen(
                         viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = navigateBackOrHome
                     )
                 }
 
@@ -228,7 +254,7 @@ fun WidgetStudioApp(
                         WidgetDesignerScreen(
                             initialConfig = config,
                             viewModel = viewModel,
-                            onBackClick = { navController.popBackStack() }
+                            onBackClick = navigateBackOrHome
                         )
                     } ?: LaunchedEffect(Unit) {
                         navController.popBackStack()
@@ -238,21 +264,21 @@ fun WidgetStudioApp(
                 composable("content") {
                     ContentManagementScreen(
                         viewModel = viewModel,
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = navigateBackOrHome
                     )
                 }
 
                 composable("categories") {
                     CategoryManagementScreen(
                         viewModel = viewModel,
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = navigateBackOrHome
                     )
                 }
 
                 composable("backup") {
                     BackupRestoreScreen(
                         viewModel = viewModel,
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = navigateBackOrHome
                     )
                 }
             }

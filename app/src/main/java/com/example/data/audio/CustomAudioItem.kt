@@ -10,7 +10,8 @@ data class CustomAudioItem(
     val id: String,
     val title: String,
     val description: String,
-    val filePath: String? = null, // null for built-in system tones
+    val filePath: String? = null, // null for built-in or raw resource tones
+    val rawResId: Int? = null, // Resource ID in res/raw for built-in audio
     val isBuiltIn: Boolean = true,
     val type: AudioType = AudioType.ADHAN,
     val durationFormatted: String = "0:30",

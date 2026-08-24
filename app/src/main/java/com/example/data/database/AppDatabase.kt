@@ -9,6 +9,7 @@ import com.example.data.dao.ContentItemDao
 import com.example.data.dao.CustomFontDao
 import com.example.data.dao.PrayerTaskDao
 import com.example.data.dao.QuranBookmarkDao
+import com.example.data.dao.QuranCacheDao
 import com.example.data.dao.SpiritualHabitDao
 import com.example.data.dao.TasbeehDao
 import com.example.data.dao.WidgetConfigDao
@@ -17,6 +18,7 @@ import com.example.data.model.ContentItemEntity
 import com.example.data.model.CustomFontEntity
 import com.example.data.model.PrayerTaskEntity
 import com.example.data.model.QuranBookmarkEntity
+import com.example.data.model.QuranSurahCacheEntity
 import com.example.data.model.SpiritualHabitEntity
 import com.example.data.model.TasbeehEntity
 import com.example.data.model.WidgetConfigEntity
@@ -30,9 +32,10 @@ import com.example.data.model.WidgetConfigEntity
         TasbeehEntity::class,
         PrayerTaskEntity::class,
         SpiritualHabitEntity::class,
-        QuranBookmarkEntity::class
+        QuranBookmarkEntity::class,
+        QuranSurahCacheEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -44,20 +47,32 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun prayerTaskDao(): PrayerTaskDao
     abstract fun spiritualHabitDao(): SpiritualHabitDao
     abstract fun quranBookmarkDao(): QuranBookmarkDao
+    abstract fun quranCacheDao(): QuranCacheDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        private val MIGRATION_8_9 = object : androidx.room.migration.Migration(8, 9) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                try {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `quran_surah_cache` (`surahNumber` INTEGER NOT NULL, `ayahsJson` TEXT NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`surahNumber`))")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "bayan_quran_app_v8.db"
+                    "bayan_islamic_app_main.db"
                 )
-                .fallbackToDestructiveMigration()
-                .fallbackToDestructiveMigrationOnDowngrade()
+                .addMigrations(MIGRATION_8_9)
+                .fallbackToDestructiveMigration(true)
+                .fallbackToDestructiveMigrationOnDowngrade(true)
                 .build()
                 INSTANCE = instance
                 instance

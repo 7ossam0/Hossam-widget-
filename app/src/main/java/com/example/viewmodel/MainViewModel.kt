@@ -3,16 +3,21 @@ package com.example.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.database.AppDatabase
 import com.example.data.model.CategoryEntity
 import com.example.data.model.ContentItemEntity
 import com.example.data.model.WidgetConfigEntity
+import com.example.data.repository.QuranRepository
 import com.example.data.repository.WidgetRepository
 import com.example.widgets.WidgetManagerHelper
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = WidgetRepository(application)
+    private val quranRepository = QuranRepository(application, AppDatabase.getInstance(application).quranCacheDao())
 
     val widgetConfigs: StateFlow<List<WidgetConfigEntity>> = repository.allWidgetConfigs
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -555,15 +560,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedAyahForTafsir = MutableStateFlow<com.example.data.quran.Ayah?>(null)
     val selectedAyahForTafsir: StateFlow<com.example.data.quran.Ayah?> = _selectedAyahForTafsir.asStateFlow()
 
-    val currentSurahAyahs: StateFlow<List<com.example.data.quran.Ayah>> = _selectedSurahNumber.map { num ->
-        com.example.data.quran.QuranDataProvider.getAyahsForSurah(num)
+    val currentSurahAyahs: StateFlow<List<com.example.data.quran.Ayah>> = _selectedSurahNumber.flatMapLatest { num ->
+        val surah = quranSurahs.firstOrNull { it.number == num } ?: quranSurahs[0]
+        quranRepository.getAyahsForSurahFlow(num, surah.nameArabic)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.data.quran.QuranDataProvider.getAyahsForSurah(1))
 
     val quranBookmarks: StateFlow<List<com.example.data.model.QuranBookmarkEntity>> = repository.allBookmarks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectSurah(surahNumber: Int) {
-        _selectedSurahNumber.value = surahNumber
+        val validNumber = surahNumber.coerceIn(1, 114)
+        _selectedSurahNumber.value = validNumber
+    }
+
+    fun nextSurah() {
+        val current = _selectedSurahNumber.value
+        if (current < 114) {
+            _selectedSurahNumber.value = current + 1
+        }
+    }
+
+    fun previousSurah() {
+        val current = _selectedSurahNumber.value
+        if (current > 1) {
+            _selectedSurahNumber.value = current - 1
+        }
+    }
+
+    fun jumpToPage(pageNumber: Int) {
+        val targetPage = pageNumber.coerceIn(1, 604)
+        val surahForPage = quranSurahs.lastOrNull { it.pageNumber <= targetPage } ?: quranSurahs[0]
+        _selectedSurahNumber.value = surahForPage.number
     }
 
     fun showTafsirForAyah(ayah: com.example.data.quran.Ayah?) {

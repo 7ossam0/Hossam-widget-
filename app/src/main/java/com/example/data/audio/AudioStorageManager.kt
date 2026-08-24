@@ -7,6 +7,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
+import com.example.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,44 +30,58 @@ object AudioStorageManager {
 
     val BUILT_IN_AUDIOS = listOf(
         CustomAudioItem(
-            id = "builtin_makkah",
-            title = "أذان مكة المكرمة (وقور ومهيب)",
-            description = "نغمة الأذان التلقائية بنقاء عالي ونبرة هادئة",
+            id = "builtin_default_adhan",
+            title = "الأذان الافتراضي الثابت (صوت ندي خاشع)",
+            description = "الله أكبر، الله أكبر، أشهد أن لا إله إلا الله، حي على الصلاة",
+            rawResId = com.example.R.raw.adhan_default,
             isBuiltIn = true,
             type = AudioType.ADHAN,
-            durationFormatted = "0:45"
+            durationFormatted = "1:16"
+        ),
+        CustomAudioItem(
+            id = "builtin_makkah",
+            title = "أذان الحرم المكي الشريف",
+            description = "صوت الأذان المبارك بنبرة مكية مهيبة",
+            rawResId = com.example.R.raw.adhan_makkah,
+            isBuiltIn = true,
+            type = AudioType.ADHAN,
+            durationFormatted = "0:32"
         ),
         CustomAudioItem(
             id = "builtin_madinah",
             title = "أذان المسجد النبوي الشريف",
-            description = "صوت شجي يبعث على السكينة والخشوع",
+            description = "صوت شجي يبعث على السكينة والخشوع في القلوب",
+            rawResId = com.example.R.raw.adhan_madinah,
             isBuiltIn = true,
             type = AudioType.ADHAN,
-            durationFormatted = "0:50"
+            durationFormatted = "0:28"
         ),
         CustomAudioItem(
             id = "builtin_takbeerat",
             title = "تكبيرات الصلاة والأعياد",
             description = "الله أكبر، الله أكبر، لا إله إلا الله",
+            rawResId = com.example.R.raw.takbeerat,
             isBuiltIn = true,
             type = AudioType.ADHAN,
-            durationFormatted = "0:30"
+            durationFormatted = "0:18"
         ),
         CustomAudioItem(
             id = "builtin_dua_after_adhan",
             title = "دعاء ما بعد الأذان (الوسيلة والفضيلة)",
             description = "اللهم رب هذه الدعوة التامة والصلاة القائمة",
+            rawResId = com.example.R.raw.dua_after_adhan,
             isBuiltIn = true,
             type = AudioType.DUA,
-            durationFormatted = "0:25"
+            durationFormatted = "0:16"
         ),
         CustomAudioItem(
             id = "builtin_soft_chime",
             title = "نغمة تنبيه ناعمة وهادئة",
             description = "رنين إسلامي هادئ مناسب لأوقات العمل",
+            rawResId = com.example.R.raw.soft_chime,
             isBuiltIn = true,
             type = AudioType.REMINDER,
-            durationFormatted = "0:10"
+            durationFormatted = "0:08"
         )
     )
 
@@ -168,7 +183,7 @@ object AudioStorageManager {
 
                 // If deleted item was active, reset to default
                 if (getSelectedAdhanId(context) == audioId) {
-                    setSelectedAdhanId(context, "builtin_makkah")
+                    setSelectedAdhanId(context, "builtin_default_adhan")
                 }
                 if (getSelectedDuaId(context) == audioId) {
                     setSelectedDuaId(context, "builtin_dua_after_adhan")
@@ -201,7 +216,7 @@ object AudioStorageManager {
 
     fun getSelectedAdhanId(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_SELECTED_ADHAN, "builtin_makkah") ?: "builtin_makkah"
+        return prefs.getString(KEY_SELECTED_ADHAN, "builtin_default_adhan") ?: "builtin_default_adhan"
     }
 
     fun setSelectedAdhanId(context: Context, id: String) {
@@ -242,30 +257,37 @@ object AudioStorageManager {
     fun playAudio(context: Context, audioItem: CustomAudioItem, onCompletion: () -> Unit = {}) {
         stopAudio()
         try {
-            val player = MediaPlayer()
-            player.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .build()
-            )
-
-            if (audioItem.filePath != null && File(audioItem.filePath).exists()) {
-                player.setDataSource(audioItem.filePath)
-                player.prepare()
-                player.start()
-                _currentlyPlayingId.value = audioItem.id
-            } else {
-                // For built-in sounds, play standard notification/alarm ringtone as preview
-                val notificationUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-                if (notificationUri != null) {
-                    player.setDataSource(context, notificationUri)
-                    player.prepare()
-                    player.start()
-                    _currentlyPlayingId.value = audioItem.id
+            val player: MediaPlayer = if (audioItem.rawResId != null) {
+                MediaPlayer.create(context, audioItem.rawResId).apply {
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .build()
+                    )
                 }
+            } else {
+                val p = MediaPlayer()
+                p.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .build()
+                )
+                if (audioItem.filePath != null && File(audioItem.filePath).exists()) {
+                    p.setDataSource(audioItem.filePath)
+                    p.prepare()
+                } else {
+                    val defaultRes = R.raw.adhan_default
+                    val uri = Uri.parse("android.resource://" + context.packageName + "/" + defaultRes)
+                    p.setDataSource(context, uri)
+                    p.prepare()
+                }
+                p
             }
+
+            player.start()
+            _currentlyPlayingId.value = audioItem.id
 
             mediaPlayer = player
             player.setOnCompletionListener {
