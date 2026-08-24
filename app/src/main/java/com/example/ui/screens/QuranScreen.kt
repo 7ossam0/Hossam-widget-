@@ -40,6 +40,8 @@ import com.example.data.quran.SurahType
 import com.example.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
+import com.example.ui.theme.QuranHafsFontFamily
+
 /**
  * أنماط القراءة للمصحف الشريف: نهاري (Classic Cream) / ليلي (Night Slate) / سيبيا (Warm Parchment)
  */
@@ -795,7 +797,8 @@ private fun InteractiveMushafText(
 
     Text(
         text = annotatedString,
-        lineHeight = (fontSizeSp * 1.85f).sp,
+        fontFamily = QuranHafsFontFamily,
+        lineHeight = (fontSizeSp * 1.95f).sp,
         textAlign = TextAlign.Justify,
         modifier = Modifier
             .fillMaxWidth()
@@ -1163,6 +1166,7 @@ private fun TafsirDetailModal(
             ) {
                 Text(
                     text = "${ayah.textUthmani} ﴿${ayah.ayahNumber.toArabicDigits()}﴾",
+                    fontFamily = QuranHafsFontFamily,
                     fontSize = 22.sp,
                     lineHeight = 40.sp,
                     fontWeight = FontWeight.SemiBold,

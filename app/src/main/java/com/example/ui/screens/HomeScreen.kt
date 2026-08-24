@@ -1305,11 +1305,12 @@ private fun OrganizedDailyAyahSpotlightCard(context: Context) {
 
             Text(
                 text = ayahText,
-                fontSize = 16.sp,
+                fontFamily = com.example.ui.theme.QuranHafsFontFamily,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center,
-                lineHeight = 26.sp,
+                lineHeight = 28.sp,
                 modifier = Modifier.fillMaxWidth()
             )
 

@@ -8,8 +8,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// App-wide Font Family with native system Arabic font support (Noto Sans / Sans-Serif)
-val AppCustomFontFamily: FontFamily = FontFamily.Default
+// 1. Unified App-wide UI Font Family (Cairo / App UI Font)
+val AppCustomFontFamily: FontFamily = FontFamily(
+    Font(R.font.app_ui_font, FontWeight.Normal),
+    Font(R.font.app_ui_font, FontWeight.Medium),
+    Font(R.font.app_ui_font, FontWeight.SemiBold),
+    Font(R.font.app_ui_font, FontWeight.Bold),
+    Font(R.font.app_ui_font, FontWeight.ExtraBold),
+    Font(R.font.app_ui_font, FontWeight.Black)
+)
+
+// 2. Specialized Quranic Script Font Family (HAFS Uthmanic / Amiri Quran)
+val QuranHafsFontFamily: FontFamily = FontFamily(
+    Font(R.font.quran_hafs, FontWeight.Normal),
+    Font(R.font.quran_hafs, FontWeight.Medium),
+    Font(R.font.quran_hafs, FontWeight.Bold)
+)
 
 val Typography = Typography(
     displayLarge = TextStyle(
@@ -24,6 +38,34 @@ val Typography = Typography(
         fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
         lineHeight = 36.sp,
+        letterSpacing = 0.sp
+    ),
+    displaySmall = TextStyle(
+        fontFamily = AppCustomFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = AppCustomFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = AppCustomFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = AppCustomFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
     titleLarge = TextStyle(

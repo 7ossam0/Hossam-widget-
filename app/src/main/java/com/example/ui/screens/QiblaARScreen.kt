@@ -1,12 +1,19 @@
 package com.example.ui.screens
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.hardware.GeomagneticField
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.location.Location
+import android.location.LocationManager
 import android.view.Surface
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -41,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.prayer.CityLocation
 import com.example.data.prayer.PrayerTimeCalculator
@@ -64,6 +72,21 @@ fun QiblaARScreen(
     var sensorAccuracy by remember { mutableIntStateOf(SensorManager.SENSOR_STATUS_ACCURACY_HIGH) }
     var showCitySelector by remember { mutableStateOf(false) }
 
+    // Calculate Magnetic Declination via GeomagneticField using selected/GPS coordinates
+    val geoField = remember(selectedCity) {
+        try {
+            GeomagneticField(
+                selectedCity.latitude.toFloat(),
+                selectedCity.longitude.toFloat(),
+                0f,
+                System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+    val magneticDeclination = remember(geoField) { geoField?.declination ?: 0f }
+
     // Accurate Great Circle Bearing and Geodesic Distance to Kaaba
     val qiblaBearing = remember(selectedCity) {
         QiblaCalculator.calculateQiblaBearing(selectedCity.latitude, selectedCity.longitude).toFloat()
@@ -75,8 +98,8 @@ fun QiblaARScreen(
         QiblaCalculator.getCompassDirectionArabic(qiblaBearing.toDouble())
     }
 
-    // Hardware Compass Sensor Listener with tilt compensation and low-pass smoothing
-    DisposableEffect(context) {
+    // Hardware Compass Sensor Listener with tilt compensation, GeomagneticField declination and low-pass smoothing
+    DisposableEffect(context, magneticDeclination) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         val accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -110,11 +133,13 @@ fun QiblaARScreen(
                     )
                     SensorManager.getOrientation(adjustedMatrix, orientation)
 
-                    var deg = Math.toDegrees(orientation[0].toDouble()).toFloat()
-                    deg = (deg + 360f) % 360f
+                    val deg = Math.toDegrees(orientation[0].toDouble()).toFloat()
+                    val magneticAzimuth = (deg + 360f) % 360f
+                    // Correct for true geographic north using magnetic declination
+                    val trueNorthAzimuth = (magneticAzimuth + magneticDeclination + 360f) % 360f
 
                     // Smooth angular transition avoiding 0/360 wrap glitch
-                    val diff = (deg - smoothedAzimuth + 540f) % 360f - 180f
+                    val diff = (trueNorthAzimuth - smoothedAzimuth + 540f) % 360f - 180f
                     smoothedAzimuth = (smoothedAzimuth + alpha * diff + 360f) % 360f
 
                     rawAzimuth = smoothedAzimuth
@@ -137,10 +162,11 @@ fun QiblaARScreen(
                             adjustedMatrix
                         )
                         SensorManager.getOrientation(adjustedMatrix, orientation)
-                        var deg = Math.toDegrees(orientation[0].toDouble()).toFloat()
-                        deg = (deg + 360f) % 360f
+                        val deg = Math.toDegrees(orientation[0].toDouble()).toFloat()
+                        val magneticAzimuth = (deg + 360f) % 360f
+                        val trueNorthAzimuth = (magneticAzimuth + magneticDeclination + 360f) % 360f
 
-                        val diff = (deg - smoothedAzimuth + 540f) % 360f - 180f
+                        val diff = (trueNorthAzimuth - smoothedAzimuth + 540f) % 360f - 180f
                         smoothedAzimuth = (smoothedAzimuth + alpha * diff + 360f) % 360f
 
                         rawAzimuth = smoothedAzimuth
@@ -642,7 +668,7 @@ private fun ArCameraCompassView(
 }
 
 /**
- * نافذة اختيار المدينة السريعة لتحديث زاوية القبلة الفلكية فوراً
+ * نافذة اختيار المدينة السريعة لتحديث زاوية القبلة الفلكية فوراً مع إمكانية التحديد بالـ GPS
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -651,8 +677,36 @@ private fun CitySelectionModal(
     onCitySelected: (CityLocation) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var locationError by remember { mutableStateOf<String?>(null) }
     val cities = PrayerTimeCalculator.PRESET_CITIES
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            val loc = detectCurrentLocation(context)
+            if (loc != null) {
+                onCitySelected(
+                    CityLocation(
+                        cityName = "موقعي الحالي (GPS)",
+                        country = "إحداثيات حية",
+                        latitude = loc.latitude,
+                        longitude = loc.longitude,
+                        timeZoneOffsetHours = (java.util.TimeZone.getDefault().rawOffset / 3600000.0)
+                    )
+                )
+                onDismiss()
+            } else {
+                locationError = "يرجى تشغيل خدمة الموقع (GPS) في هاتفك لتحديث الإحداثيات."
+            }
+        } else {
+            locationError = "يتطلب تحديد الموقع منح إذن الوصول إلى GPS."
+        }
+    }
 
     val filteredCities = remember(searchQuery) {
         if (searchQuery.isBlank()) cities
@@ -678,13 +732,13 @@ private fun CitySelectionModal(
             ) {
                 Column {
                     Text(
-                        text = "اختر مدينتك لضبط القبلة 📍",
+                        text = "تحديد موقع القبلة 📍",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "يتم حساب زاوية القبلة والمسافة وفق إحداثيات مدينتك الدقيقة",
+                        text = "يتم حساب زاوية القبلة والانحراف المغناطيسي بدقة",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -694,7 +748,60 @@ private fun CitySelectionModal(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // زر تحديد الموقع التلقائي عبر الـ GPS
+            FilledTonalButton(
+                onClick = {
+                    val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    if (hasFine || hasCoarse) {
+                        val loc = detectCurrentLocation(context)
+                        if (loc != null) {
+                            onCitySelected(
+                                CityLocation(
+                                    cityName = "موقعي الحالي (GPS)",
+                                    country = "إحداثيات حية",
+                                    latitude = loc.latitude,
+                                    longitude = loc.longitude,
+                                    timeZoneOffsetHours = (java.util.TimeZone.getDefault().rawOffset / 3600000.0)
+                                )
+                            )
+                            onDismiss()
+                        } else {
+                            locationError = "يرجى التأكد من تشغيل خدمة الموقع (GPS)."
+                        }
+                    } else {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("تحديد موقعي التلقائي عبر الـ GPS", fontWeight = FontWeight.Bold)
+            }
+
+            if (locationError != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = locationError!!,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedTextField(
                 value = searchQuery,
@@ -711,7 +818,7 @@ private fun CitySelectionModal(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 380.dp),
+                    .heightIn(max = 340.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filteredCities, key = { "${it.cityName}_${it.country}" }) { city ->
@@ -772,5 +879,32 @@ private fun CitySelectionModal(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+private fun detectCurrentLocation(context: Context): Location? {
+    return try {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
+        val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!hasFine && !hasCoarse) return null
+
+        val gpsLoc = if (hasFine && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        } else null
+
+        val netLoc = if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+        } else null
+
+        val passiveLoc = try {
+            locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
+        } catch (e: Exception) {
+            null
+        }
+
+        gpsLoc ?: netLoc ?: passiveLoc
+    } catch (e: Exception) {
+        null
     }
 }
