@@ -100,10 +100,10 @@ fun QiblaARScreen(
 
     // Hardware Compass Sensor Listener with tilt compensation, GeomagneticField declination and low-pass smoothing
     DisposableEffect(context, magneticDeclination) {
-        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-        val accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        val magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        val rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        val accelSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val magSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
         val gravity = FloatArray(3)
         val geomagnetic = FloatArray(3)
@@ -181,14 +181,18 @@ fun QiblaARScreen(
         }
 
         if (rotationSensor != null) {
-            sensorManager.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+            sensorManager?.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
         } else {
-            accelSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
-            magSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+            accelSensor?.let { sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+            magSensor?.let { sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
         }
 
         onDispose {
-            sensorManager.unregisterListener(listener)
+            try {
+                sensorManager?.unregisterListener(listener)
+            } catch (e: Exception) {
+                // Safe ignore
+            }
         }
     }
 
