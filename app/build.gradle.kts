@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.widgetstudio.app"
     minSdk = 24
     targetSdk = 35
-    versionCode = 12
-    versionName = "2.1"
+    versionCode = 13
+    versionName = "3.0-rc1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

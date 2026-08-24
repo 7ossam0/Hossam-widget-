@@ -1,21 +1,34 @@
 # Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Keep Room entities, DAOs and Database
+-keep class androidx.room.** { *; }
+-dontwarn androidx.room.paging.**
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao class * { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep Moshi models and adapters
+-keepclassmembers class * {
+    @com.squareup.moshi.Json *;
+}
+-keep class com.squareup.moshi.** { *; }
+-keep class * extends com.squareup.moshi.JsonAdapter { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep App Widget Providers & Services
+-keep class * extends android.appwidget.AppWidgetProvider { *; }
+-keep class * extends android.widget.RemoteViewsService { *; }
+-keep class * extends android.content.BroadcastReceiver { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Coroutines
+-keep class kotlinx.coroutines.** { *; }
+
+# Keep Data Models
+-keep class com.example.data.model.** { *; }
+-keep class com.example.data.quran.** { *; }
+-keep class com.example.data.prayer.** { *; }
+-keep class com.example.data.audio.** { *; }
+-keep class com.example.data.ai.** { *; }
+
+# Preserve line numbers for release diagnostics
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
