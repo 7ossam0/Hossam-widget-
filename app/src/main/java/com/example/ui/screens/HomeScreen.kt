@@ -45,7 +45,11 @@ fun HomeScreen(
     onNavigateToCategories: () -> Unit,
     onNavigateToBackup: () -> Unit,
     onNavigateToPrayer: () -> Unit,
-    onNavigateToTasbeeh: () -> Unit
+    onNavigateToTasbeeh: () -> Unit,
+    onNavigateToQuran: () -> Unit = {},
+    onNavigateToQibla: () -> Unit = {},
+    onNavigateToTasks: () -> Unit = {},
+    onNavigateToAiWisdom: () -> Unit = {}
 ) {
     val widgetConfigs by viewModel.widgetConfigs.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
@@ -188,67 +192,96 @@ fun HomeScreen(
                     )
                 }
 
-                // 3. Glassmorphic Navigation Quick Hub (5 Main Feature Hubs)
+                // 3. Glassmorphic Navigation Quick Hub (Core Feature Pillars)
                 item {
                     Text(
-                        text = "الأقسام والخدمات التفاعلية",
-                        fontSize = 14.sp,
+                        text = "الخدمات والخصائص الأساسية",
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                     )
+                    
+                    // Row 1: المصحف الشريف & القبلة AR
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         QuickNavGlassTile(
-                            title = "مواقيت الصلاة",
-                            subtitle = "السماء الحية والقبلة",
-                            icon = Icons.Default.Mosque,
-                            accentColor = Color(0xFF00E5FF),
-                            onClick = onNavigateToPrayer,
+                            title = "المصحف والتفسير",
+                            subtitle = "رسم عثماني وتفسير ميسر",
+                            icon = Icons.Default.MenuBook,
+                            accentColor = Color(0xFF10B981),
+                            onClick = onNavigateToQuran,
                             modifier = Modifier.weight(1f)
                         )
 
                         QuickNavGlassTile(
-                            title = "المسبحة الذكية",
-                            subtitle = "عداد وأهداف تفاعلية",
-                            icon = Icons.Default.Adjust,
-                            accentColor = Color(0xFF10B981),
-                            onClick = onNavigateToTasbeeh,
+                            title = "القبلة بالواقع المعزز",
+                            subtitle = "بوصلة فلكية و AR",
+                            icon = Icons.Default.Explore,
+                            accentColor = Color(0xFF00E5FF),
+                            onClick = onNavigateToQibla,
                             modifier = Modifier.weight(1f)
                         )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Row 2: المهام والجدول الروحي & مساعد بيان الذكي
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         QuickNavGlassTile(
+                            title = "مهام الصلاة والعادات",
+                            subtitle = "جدولة المهام فلكياً",
+                            icon = Icons.Default.EventAvailable,
+                            accentColor = Color(0xFFF59E0B),
+                            onClick = onNavigateToTasks,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        QuickNavGlassTile(
+                            title = "مساعد بيان الذكي",
+                            subtitle = "بحث وتدبر موثق (RAG)",
+                            icon = Icons.Default.AutoAwesome,
+                            accentColor = Color(0xFF8B5CF6),
+                            onClick = onNavigateToAiWisdom,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Row 3: المسبحة & الأذكار & النسخ
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QuickNavGlassTile(
+                            title = "المسبحة الذكية",
+                            subtitle = "عداد وأهداف",
+                            icon = Icons.Default.Adjust,
+                            accentColor = Color(0xFFEC4899),
+                            onClick = onNavigateToTasbeeh,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        QuickNavGlassTile(
                             title = "الأذكار والمحتوى",
                             subtitle = "إدارة النصوص",
                             icon = Icons.Default.Article,
-                            accentColor = Color(0xFF8B5CF6),
+                            accentColor = Color(0xFF6366F1),
                             onClick = onNavigateToContent,
                             modifier = Modifier.weight(1f)
                         )
 
                         QuickNavGlassTile(
-                            title = "التصنيفات",
-                            subtitle = "القوائم والمجموعات",
-                            icon = Icons.Default.Category,
-                            accentColor = Color(0xFFF59E0B),
-                            onClick = onNavigateToCategories,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        QuickNavGlassTile(
                             title = "النسخ والاحتياط",
-                            subtitle = "حفظ واسترجاع",
+                            subtitle = "تصدير واستيراد",
                             icon = Icons.Default.Backup,
-                            accentColor = Color(0xFFEC4899),
+                            accentColor = Color(0xFF14B8A6),
                             onClick = onNavigateToBackup,
                             modifier = Modifier.weight(1f)
                         )

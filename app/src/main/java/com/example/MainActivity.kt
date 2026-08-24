@@ -9,19 +9,27 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.data.model.WidgetConfigEntity
 import com.example.services.PrayerNotificationHelper
@@ -94,72 +102,167 @@ fun WidgetStudioApp(
 ) {
     val navController = rememberNavController()
     var activeDesignerConfig by remember { mutableStateOf<WidgetConfigEntity?>(null) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
+    val bottomNavItems = listOf(
+        NavigationItem("home", "الرئيسية", Icons.Filled.Home, Icons.Outlined.Home),
+        NavigationItem("quran", "المصحف", Icons.Filled.MenuBook, Icons.Outlined.MenuBook),
+        NavigationItem("qibla", "القبلة", Icons.Filled.Explore, Icons.Outlined.Explore),
+        NavigationItem("tasks", "المهام", Icons.Filled.EventAvailable, Icons.Outlined.EventAvailable),
+        NavigationItem("ai_wisdom", "بيان الذكي", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome)
+    )
 
-    NavHost(
-        navController = navController,
-        startDestination = "home"
-    ) {
-        composable("home") {
-            HomeScreen(
-                viewModel = viewModel,
-                onNavigateToDesigner = { config ->
-                    activeDesignerConfig = config
-                    navController.navigate("designer")
-                },
-                onNavigateToContent = { navController.navigate("content") },
-                onNavigateToCategories = { navController.navigate("categories") },
-                onNavigateToBackup = { navController.navigate("backup") },
-                onNavigateToPrayer = { navController.navigate("prayer") },
-                onNavigateToTasbeeh = { navController.navigate("tasbeeh") }
-            )
-        }
+    val showBottomBar = currentRoute in listOf("home", "quran", "qibla", "tasks", "ai_wisdom")
 
-        composable("prayer") {
-            com.example.ui.screens.PrayerTimesScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable("tasbeeh") {
-            com.example.ui.screens.TasbeehScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable("designer") {
-            activeDesignerConfig?.let { config ->
-                WidgetDesignerScreen(
-                    initialConfig = config,
-                    viewModel = viewModel,
-                    onBackClick = { navController.popBackStack() }
-                )
-            } ?: LaunchedEffect(Unit) {
-                navController.popBackStack()
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp
+                ) {
+                    bottomNavItems.forEach { item ->
+                        val selected = currentRoute == item.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                    contentDescription = item.label
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = item.label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("nav_item_${item.route}")
+                        )
+                    }
+                }
             }
         }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            NavHost(
+                navController = navController,
+                startDestination = "home"
+            ) {
+                composable("home") {
+                    HomeScreen(
+                        viewModel = viewModel,
+                        onNavigateToDesigner = { config ->
+                            activeDesignerConfig = config
+                            navController.navigate("designer")
+                        },
+                        onNavigateToContent = { navController.navigate("content") },
+                        onNavigateToCategories = { navController.navigate("categories") },
+                        onNavigateToBackup = { navController.navigate("backup") },
+                        onNavigateToPrayer = { navController.navigate("prayer") },
+                        onNavigateToTasbeeh = { navController.navigate("tasbeeh") },
+                        onNavigateToQuran = { navController.navigate("quran") },
+                        onNavigateToQibla = { navController.navigate("qibla") },
+                        onNavigateToTasks = { navController.navigate("tasks") },
+                        onNavigateToAiWisdom = { navController.navigate("ai_wisdom") }
+                    )
+                }
 
-        composable("content") {
-            ContentManagementScreen(
-                viewModel = viewModel,
-                onBackClick = { navController.popBackStack() }
-            )
-        }
+                composable("quran") {
+                    QuranScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
 
-        composable("categories") {
-            CategoryManagementScreen(
-                viewModel = viewModel,
-                onBackClick = { navController.popBackStack() }
-            )
-        }
+                composable("qibla") {
+                    QiblaARScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
 
-        composable("backup") {
-            BackupRestoreScreen(
-                viewModel = viewModel,
-                onBackClick = { navController.popBackStack() }
-            )
+                composable("tasks") {
+                    SpiritualTasksScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable("ai_wisdom") {
+                    AiWisdomScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable("prayer") {
+                    PrayerTimesScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable("tasbeeh") {
+                    TasbeehScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable("designer") {
+                    activeDesignerConfig?.let { config ->
+                        WidgetDesignerScreen(
+                            initialConfig = config,
+                            viewModel = viewModel,
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    } ?: LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                }
+
+                composable("content") {
+                    ContentManagementScreen(
+                        viewModel = viewModel,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable("categories") {
+                    CategoryManagementScreen(
+                        viewModel = viewModel,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable("backup") {
+                    BackupRestoreScreen(
+                        viewModel = viewModel,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+            }
         }
     }
 }
+
+private data class NavigationItem(
+    val route: String,
+    val label: String,
+    val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector
+)

@@ -489,4 +489,118 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun getItemsForWidget(config: WidgetConfigEntity): List<ContentItemEntity> {
         return repository.getItemsForWidgetConfig(config)
     }
+
+    // ==========================================
+    // PRAYER-LINKED TASKS (المهام المربوطة بالصلوات)
+    // ==========================================
+    val prayerTasks: StateFlow<List<com.example.data.model.PrayerTaskEntity>> = repository.allPrayerTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun addPrayerTask(title: String, prayerKey: String, offsetMinutes: Int, category: String = "عام") {
+        viewModelScope.launch {
+            if (title.isNotBlank()) {
+                val task = com.example.data.model.PrayerTaskEntity(
+                    title = title.trim(),
+                    prayerKey = prayerKey,
+                    offsetMinutes = offsetMinutes,
+                    category = category
+                )
+                repository.insertPrayerTask(task)
+                _statusMessage.value = "تمت جدولة المهمة بنجاح مع صلاة $prayerKey ⏱️"
+            }
+        }
+    }
+
+    fun togglePrayerTask(taskId: Long, isCompleted: Boolean) {
+        viewModelScope.launch {
+            repository.togglePrayerTask(taskId, isCompleted)
+        }
+    }
+
+    fun deletePrayerTask(taskId: Long) {
+        viewModelScope.launch {
+            repository.deletePrayerTask(taskId)
+            _statusMessage.value = "تم حذف المهمة"
+        }
+    }
+
+    // ==========================================
+    // SPIRITUAL HABITS (مُتتبع العادات الروحية)
+    // ==========================================
+    private val todayDateString: String
+        get() {
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            return sdf.format(java.util.Date())
+        }
+
+    val todayHabits: StateFlow<com.example.data.model.SpiritualHabitEntity?> = repository.getHabitForDate(todayDateString)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun updateTodayHabit(updater: (com.example.data.model.SpiritualHabitEntity) -> com.example.data.model.SpiritualHabitEntity) {
+        viewModelScope.launch {
+            val current = todayHabits.value ?: com.example.data.model.SpiritualHabitEntity(dateString = todayDateString)
+            val updated = updater(current)
+            repository.saveHabit(updated)
+        }
+    }
+
+    // ==========================================
+    // THE HOLY QURAN & TAFSIR (المصحف والتفسير)
+    // ==========================================
+    val quranSurahs: List<com.example.data.quran.Surah> = com.example.data.quran.QuranDataProvider.surahs
+
+    private val _selectedSurahNumber = MutableStateFlow(1)
+    val selectedSurahNumber: StateFlow<Int> = _selectedSurahNumber.asStateFlow()
+
+    private val _selectedAyahForTafsir = MutableStateFlow<com.example.data.quran.Ayah?>(null)
+    val selectedAyahForTafsir: StateFlow<com.example.data.quran.Ayah?> = _selectedAyahForTafsir.asStateFlow()
+
+    val currentSurahAyahs: StateFlow<List<com.example.data.quran.Ayah>> = _selectedSurahNumber.map { num ->
+        com.example.data.quran.QuranDataProvider.getAyahsForSurah(num)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.data.quran.QuranDataProvider.getAyahsForSurah(1))
+
+    val quranBookmarks: StateFlow<List<com.example.data.model.QuranBookmarkEntity>> = repository.allBookmarks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun selectSurah(surahNumber: Int) {
+        _selectedSurahNumber.value = surahNumber
+    }
+
+    fun showTafsirForAyah(ayah: com.example.data.quran.Ayah?) {
+        _selectedAyahForTafsir.value = ayah
+    }
+
+    fun addBookmark(surahNumber: Int, surahName: String, ayahNumber: Int, note: String = "") {
+        viewModelScope.launch {
+            val bookmark = com.example.data.model.QuranBookmarkEntity(
+                surahNumber = surahNumber,
+                surahName = surahName,
+                ayahNumber = ayahNumber,
+                note = note
+            )
+            repository.insertBookmark(bookmark)
+            _statusMessage.value = "تم حفظ الفاصلة المرجعية في سورة $surahName (آية $ayahNumber) 🔖"
+        }
+    }
+
+    fun deleteBookmark(bookmarkId: Long) {
+        viewModelScope.launch {
+            repository.deleteBookmark(bookmarkId)
+            _statusMessage.value = "تمت إزالة الفاصلة المرجعية"
+        }
+    }
+
+    // ==========================================
+    // ISLAMIC WISDOM & AI ASSISTANT (مساعد بيان الذكي)
+    // ==========================================
+    private val _wisdomSearchQuery = MutableStateFlow("")
+    val wisdomSearchQuery: StateFlow<String> = _wisdomSearchQuery.asStateFlow()
+
+    val wisdomResults: StateFlow<List<com.example.data.ai.WisdomTopic>> = _wisdomSearchQuery.map { query ->
+        com.example.data.ai.IslamicWisdomAssistant.searchWisdom(query)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.data.ai.IslamicWisdomAssistant.topics)
+
+    fun setWisdomQuery(query: String) {
+        _wisdomSearchQuery.value = query
+    }
 }

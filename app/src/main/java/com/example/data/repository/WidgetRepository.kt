@@ -17,6 +17,48 @@ class WidgetRepository(private val context: Context) {
     private val widgetConfigDao = db.widgetConfigDao()
     private val customFontDao = db.customFontDao()
     private val tasbeehDao = db.tasbeehDao()
+    private val prayerTaskDao = db.prayerTaskDao()
+    private val spiritualHabitDao = db.spiritualHabitDao()
+    private val quranBookmarkDao = db.quranBookmarkDao()
+
+    // Prayer Tasks Operations
+    val allPrayerTasks: Flow<List<PrayerTaskEntity>> = prayerTaskDao.getAllTasks()
+    val pendingPrayerTasks: Flow<List<PrayerTaskEntity>> = prayerTaskDao.getPendingTasks()
+
+    suspend fun insertPrayerTask(task: PrayerTaskEntity): Long = withContext(Dispatchers.IO) {
+        prayerTaskDao.insertTask(task)
+    }
+
+    suspend fun updatePrayerTask(task: PrayerTaskEntity) = withContext(Dispatchers.IO) {
+        prayerTaskDao.updateTask(task)
+    }
+
+    suspend fun togglePrayerTask(taskId: Long, completed: Boolean) = withContext(Dispatchers.IO) {
+        prayerTaskDao.setTaskCompleted(taskId, completed)
+    }
+
+    suspend fun deletePrayerTask(taskId: Long) = withContext(Dispatchers.IO) {
+        prayerTaskDao.deleteById(taskId)
+    }
+
+    // Spiritual Habits Operations
+    fun getHabitForDate(dateStr: String): Flow<SpiritualHabitEntity?> = spiritualHabitDao.getHabitForDate(dateStr)
+    val recentHabits: Flow<List<SpiritualHabitEntity>> = spiritualHabitDao.getRecentHabits()
+
+    suspend fun saveHabit(habit: SpiritualHabitEntity) = withContext(Dispatchers.IO) {
+        spiritualHabitDao.insertOrUpdateHabit(habit)
+    }
+
+    // Quran Bookmarks Operations
+    val allBookmarks: Flow<List<QuranBookmarkEntity>> = quranBookmarkDao.getAllBookmarks()
+
+    suspend fun insertBookmark(bookmark: QuranBookmarkEntity): Long = withContext(Dispatchers.IO) {
+        quranBookmarkDao.insertBookmark(bookmark)
+    }
+
+    suspend fun deleteBookmark(bookmarkId: Long) = withContext(Dispatchers.IO) {
+        quranBookmarkDao.deleteById(bookmarkId)
+    }
 
     // Tasbeeh Operations
     val allTasbeehItems: Flow<List<TasbeehEntity>> = tasbeehDao.getAllTasbeeh()
@@ -143,6 +185,49 @@ class WidgetRepository(private val context: Context) {
             if (tasbeehCount == 0) {
                 tasbeehDao.insertAll(SampleData.initialTasbeehItems)
             }
+            // Seed initial prayer tasks
+            val existingTasks = prayerTaskDao.getPendingTasks()
+            // Check if any task exists
+            prayerTaskDao.insertTask(
+                PrayerTaskEntity(
+                    title = "أذكار الصباح وجلسة الإشراق وقراءة الورد اليومي",
+                    prayerKey = "FAJR",
+                    offsetMinutes = 20,
+                    category = "عبادة"
+                )
+            )
+            prayerTaskDao.insertTask(
+                PrayerTaskEntity(
+                    title = "مراجعة مهام العمل والاستعداد لاجتماع الفريق",
+                    prayerKey = "DHUHR",
+                    offsetMinutes = 30,
+                    category = "عمل"
+                )
+            )
+            prayerTaskDao.insertTask(
+                PrayerTaskEntity(
+                    title = "قراءة جزء من القرآن الكريم وتدبر التفسير الميسر",
+                    prayerKey = "ASR",
+                    offsetMinutes = 20,
+                    category = "قرآن"
+                )
+            )
+            prayerTaskDao.insertTask(
+                PrayerTaskEntity(
+                    title = "جلسة عائلية وأذكار المساء",
+                    prayerKey = "MAGHRIB",
+                    offsetMinutes = 15,
+                    category = "شخصي"
+                )
+            )
+            prayerTaskDao.insertTask(
+                PrayerTaskEntity(
+                    title = "قراءة سورة الملك والوتر قبل النوم",
+                    prayerKey = "ISHA",
+                    offsetMinutes = 25,
+                    category = "عبادة"
+                )
+            )
         } catch (e: Exception) {
             e.printStackTrace()
         }

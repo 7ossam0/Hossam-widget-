@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Widget Studio"
+rootProject.name = "بيان"
 
 include(":app")
