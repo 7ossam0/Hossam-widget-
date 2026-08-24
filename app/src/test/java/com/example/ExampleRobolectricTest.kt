@@ -39,5 +39,16 @@ class ExampleRobolectricTest {
     val db = AppDatabase.getInstance(context)
     assertNotNull(db)
   }
+
+  @Test
+  fun `verify font resources load properly`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val f1 = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.app_ui_font)
+    val f2 = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.app_ui_font_bold)
+    val f3 = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.quran_hafs)
+    assertNotNull(f1)
+    assertNotNull(f2)
+    assertNotNull(f3)
+  }
 }
 

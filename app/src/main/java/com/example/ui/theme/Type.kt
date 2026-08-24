@@ -8,21 +8,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// 1. Unified App-wide UI Font Family (Cairo / App UI Font)
+// 1. Unified App-wide UI Font Family (Tajawal / App UI Font)
 val AppCustomFontFamily: FontFamily = FontFamily(
     Font(R.font.app_ui_font, FontWeight.Normal),
-    Font(R.font.app_ui_font, FontWeight.Medium),
-    Font(R.font.app_ui_font, FontWeight.SemiBold),
-    Font(R.font.app_ui_font, FontWeight.Bold),
-    Font(R.font.app_ui_font, FontWeight.ExtraBold),
-    Font(R.font.app_ui_font, FontWeight.Black)
+    Font(R.font.app_ui_font_bold, FontWeight.Bold)
 )
 
 // 2. Specialized Quranic Script Font Family (HAFS Uthmanic / Amiri Quran)
 val QuranHafsFontFamily: FontFamily = FontFamily(
-    Font(R.font.quran_hafs, FontWeight.Normal),
-    Font(R.font.quran_hafs, FontWeight.Medium),
-    Font(R.font.quran_hafs, FontWeight.Bold)
+    Font(R.font.quran_hafs, FontWeight.Normal)
 )
 
 val Typography = Typography(

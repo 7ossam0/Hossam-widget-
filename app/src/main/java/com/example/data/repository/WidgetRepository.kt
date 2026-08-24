@@ -185,49 +185,49 @@ class WidgetRepository(private val context: Context) {
             if (tasbeehCount == 0) {
                 tasbeehDao.insertAll(SampleData.initialTasbeehItems)
             }
-            // Seed initial prayer tasks
-            val existingTasks = prayerTaskDao.getPendingTasks()
-            // Check if any task exists
-            prayerTaskDao.insertTask(
-                PrayerTaskEntity(
-                    title = "أذكار الصباح وجلسة الإشراق وقراءة الورد اليومي",
-                    prayerKey = "FAJR",
-                    offsetMinutes = 20,
-                    category = "عبادة"
+            // Seed initial prayer tasks if empty
+            if (prayerTaskDao.getCount() == 0) {
+                prayerTaskDao.insertTask(
+                    PrayerTaskEntity(
+                        title = "أذكار الصباح وجلسة الإشراق وقراءة الورد اليومي",
+                        prayerKey = "FAJR",
+                        offsetMinutes = 20,
+                        category = "عبادة"
+                    )
                 )
-            )
-            prayerTaskDao.insertTask(
-                PrayerTaskEntity(
-                    title = "مراجعة مهام العمل والاستعداد لاجتماع الفريق",
-                    prayerKey = "DHUHR",
-                    offsetMinutes = 30,
-                    category = "عمل"
+                prayerTaskDao.insertTask(
+                    PrayerTaskEntity(
+                        title = "مراجعة مهام العمل والاستعداد لاجتماع الفريق",
+                        prayerKey = "DHUHR",
+                        offsetMinutes = 30,
+                        category = "عمل"
+                    )
                 )
-            )
-            prayerTaskDao.insertTask(
-                PrayerTaskEntity(
-                    title = "قراءة جزء من القرآن الكريم وتدبر التفسير الميسر",
-                    prayerKey = "ASR",
-                    offsetMinutes = 20,
-                    category = "قرآن"
+                prayerTaskDao.insertTask(
+                    PrayerTaskEntity(
+                        title = "قراءة جزء من القرآن الكريم وتدبر التفسير الميسر",
+                        prayerKey = "ASR",
+                        offsetMinutes = 20,
+                        category = "قرآن"
+                    )
                 )
-            )
-            prayerTaskDao.insertTask(
-                PrayerTaskEntity(
-                    title = "جلسة عائلية وأذكار المساء",
-                    prayerKey = "MAGHRIB",
-                    offsetMinutes = 15,
-                    category = "شخصي"
+                prayerTaskDao.insertTask(
+                    PrayerTaskEntity(
+                        title = "جلسة عائلية وأذكار المساء",
+                        prayerKey = "MAGHRIB",
+                        offsetMinutes = 15,
+                        category = "شخصي"
+                    )
                 )
-            )
-            prayerTaskDao.insertTask(
-                PrayerTaskEntity(
-                    title = "قراءة سورة الملك والوتر قبل النوم",
-                    prayerKey = "ISHA",
-                    offsetMinutes = 25,
-                    category = "عبادة"
+                prayerTaskDao.insertTask(
+                    PrayerTaskEntity(
+                        title = "قراءة سورة الملك والوتر قبل النوم",
+                        prayerKey = "ISHA",
+                        offsetMinutes = 25,
+                        category = "عبادة"
+                    )
                 )
-            )
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

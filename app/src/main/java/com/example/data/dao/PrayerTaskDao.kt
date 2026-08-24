@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PrayerTaskDao {
+    @Query("SELECT COUNT(*) FROM prayer_tasks")
+    suspend fun getCount(): Int
+
     @Query("SELECT * FROM prayer_tasks ORDER BY isCompleted ASC, prayerKey ASC, offsetMinutes ASC")
     fun getAllTasks(): Flow<List<PrayerTaskEntity>>
 
