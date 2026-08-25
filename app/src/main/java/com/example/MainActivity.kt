@@ -68,11 +68,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             WidgetStudioTheme {
                 // Request Notification Permission on Android 13+ (API 33+)
+                val context = LocalContext.current
                 val notificationPermissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = { isGranted ->
                         if (isGranted) {
-                            PrayerNotificationHelper.scheduleNextPrayerAlarms(this@MainActivity)
+                            try {
+                                PrayerNotificationHelper.scheduleNextPrayerAlarms(context)
+                            } catch (t: Throwable) {
+                                // Ignore
+                            }
                         }
                     }
                 )
@@ -80,7 +85,13 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         try {
-                            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.POST_NOTIFICATIONS
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (!isGranted) {
+                                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            }
                         } catch (e: Throwable) {
                             // Safe fallback
                         }

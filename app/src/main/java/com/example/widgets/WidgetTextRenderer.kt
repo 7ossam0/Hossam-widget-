@@ -120,24 +120,7 @@ object WidgetTextRenderer {
             }
         }
 
-        // 2. Default app font (Tajawal / F5 font loaded from res/font)
-        try {
-            val fontRes = if (isBold) R.font.app_font_bold else R.font.app_font
-            val tf = ResourcesCompat.getFont(context, fontRes)
-            if (tf != null) {
-                val style = when {
-                    isItalic && isBold -> Typeface.BOLD_ITALIC
-                    isBold -> Typeface.BOLD
-                    isItalic -> Typeface.ITALIC
-                    else -> Typeface.NORMAL
-                }
-                return Typeface.create(tf, style)
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-
-        // 3. Fallback to System Typefaces
+        // 2. Fallback to System Typefaces
         val baseTypeface = when (config.fontFamily) {
             "CAIRO", "AMIRI" -> Typeface.SERIF
             "NOTO_KUFI", "TAJAWAL" -> Typeface.SANS_SERIF

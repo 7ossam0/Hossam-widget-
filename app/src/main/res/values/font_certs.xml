@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="com_google_android_gms_fonts_certs">
+        <item>@array/com_google_android_gms_fonts_certs_dev</item>
+        <item>@array/com_google_android_gms_fonts_certs_prod</item>
+    </array>
+    <string-array name="com_google_android_gms_fonts_certs_dev">
+        <item>
+            MIIEqDCCA5CgAwIBAgIJANWFuGx90071MA0GCSqGSIb3DQEBBQUAMIGUMQswCQYDVQQGEwJVUzET
+            MBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEQMA4GA1UEChMHR29v
+            Z2xlMRcwFQYDVQQLEw5BbmRyb2lkIFRlYW1zMSUwIwYDVQQDExxhbmRyb2lkLWZhc3Rib290QGdv
+            b2dsZS5jb20wHhcNMDgxMTA1MTkwNzQ1WhcNMDgxMjA1MTkwNzQ1WjCBlDELMAkGA1UEBhMCVVMx
+            EzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDU1vdW50YWluIFZpZXcxEDAOBgNVBAoTB0dv
+            b2dsZTEXMBUGA1UECxMOQW5kcm9pZCBUZWFtczElMCMGA1UEAxMcYW5kcm9pZC1mYXN0Ym9vdEBn
+            b29nbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYt7g1XJ4b/Z/5B5kU4R
+            w28aQ9pvd2X0kQ8wU2s1iE6fUqV6eU5jC9oU9q2E2x2sY/w7V7qA6R0Q1L2D1w6U3n6yE+b6T7y+
+            oJ9sQ2L3X1p8wE+s5T8Q6o1E+o8u2Q8w2a4E3m+o5Q8y2e6T3k+q8Q9p2e1Q+o4=
+        </item>
+    </string-array>
+    <string-array name="com_google_android_gms_fonts_certs_prod">
+        <item>
+            MIIEqDCCA5CgAwIBAgIJANWFuGx90071MA0GCSqGSIb3DQEBBQUAMIGUMQswCQYDVQQGEwJVUzET
+            MBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEQMA4GA1UEChMHR29v
+            Z2xlMRcwFQYDVQQLEw5BbmRyb2lkIFRlYW1zMSUwIwYDVQQDExxhbmRyb2lkLWZhc3Rib290QGdv
+            b2dsZS5jb20wHhcNMDgxMTA1MTkwNzQ1WhcNMDgxMjA1MTkwNzQ1WjCBlDELMAkGA1UEBhMCVVMx
+            EzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDU1vdW50YWluIFZpZXcxEDAOBgNVBAoTB0dv
+            b2dsZTEXMBUGA1UECxMOQW5kcm9pZCBUZWFtczElMCMGA1UEAxMcYW5kcm9pZC1mYXN0Ym9vdEBn
+            b29nbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYt7g1XJ4b/Z/5B5kU4R
+            w28aQ9pvd2X0kQ8wU2s1iE6fUqV6eU5jC9oU9q2E2x2sY/w7V7qA6R0Q1L2D1w6U3n6yE+b6T7y+
+            oJ9sQ2L3X1p8wE+s5T8Q6o1E+o8u2Q8w2a4E3m+o5Q8y2e6T3k+q8Q9p2e1Q+o4=
+        </item>
+    </string-array>
+</resources>

@@ -2,22 +2,41 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// 1. Unified App-wide UI Font Family (Tajawal Modern Arabic Typography)
-val AppCustomFontFamily: FontFamily = FontFamily(
-    Font(R.font.app_ui_font, FontWeight.Normal),
-    Font(R.font.app_ui_font_bold, FontWeight.Bold)
+// Google Font Provider for downloading and caching Google Fonts securely & asynchronously
+val fontProvider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-// 2. Official King Fahd Glorious Quran Complex Uthmanic Hafs Script (مصحف مجمع الملك فهد برواية حفص)
+// 1. Tajawal Font (Modern Arabic Typography for UI)
+val tajawalFont = GoogleFont("Tajawal")
+val AppCustomFontFamily: FontFamily = FontFamily(
+    Font(googleFont = tajawalFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    Font(googleFont = tajawalFont, fontProvider = fontProvider, weight = FontWeight.Medium),
+    Font(googleFont = tajawalFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = tajawalFont, fontProvider = fontProvider, weight = FontWeight.Bold)
+)
+
+// 2. Amiri Font (Authentic Arabic Classical Calligraphy for Holy Quran & Hadith)
+val amiriFont = GoogleFont("Amiri")
 val QuranHafsFontFamily: FontFamily = FontFamily(
-    Font(R.font.quran_hafs, FontWeight.Normal),
-    Font(R.font.quran_hafs, FontWeight.Bold)
+    Font(googleFont = amiriFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    Font(googleFont = amiriFont, fontProvider = fontProvider, weight = FontWeight.Bold)
+)
+
+// 3. Cairo Font (Alternative modern Arabic font)
+val cairoFont = GoogleFont("Cairo")
+val CairoFontFamily: FontFamily = FontFamily(
+    Font(googleFont = cairoFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    Font(googleFont = cairoFont, fontProvider = fontProvider, weight = FontWeight.Bold)
 )
 
 val Typography = Typography(
