@@ -8,11 +8,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-// 1. Unified App-wide UI Font Family (Robust modern Sans-Serif / Noto Sans Arabic)
-val AppCustomFontFamily: FontFamily = FontFamily.SansSerif
+// 1. Unified App-wide UI Font Family (Tajawal Modern Arabic Typography)
+val AppCustomFontFamily: FontFamily = FontFamily(
+    Font(R.font.app_ui_font, FontWeight.Normal),
+    Font(R.font.app_ui_font_bold, FontWeight.Bold)
+)
 
-// 2. Specialized Quranic Script Font Family (Traditional Arabic Serif / Naskh)
-val QuranHafsFontFamily: FontFamily = FontFamily.Serif
+// 2. Official King Fahd Glorious Quran Complex Uthmanic Hafs Script (مصحف مجمع الملك فهد برواية حفص)
+val QuranHafsFontFamily: FontFamily = FontFamily(
+    Font(R.font.quran_hafs, FontWeight.Normal),
+    Font(R.font.quran_hafs, FontWeight.Bold)
+)
 
 val Typography = Typography(
     displayLarge = TextStyle(

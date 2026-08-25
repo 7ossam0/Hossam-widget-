@@ -67,6 +67,7 @@ fun QiblaARScreen(
 
     var isArMode by remember { mutableStateOf(false) }
     var rawAzimuth by remember { mutableFloatStateOf(0f) }
+    var continuousTargetHeading by remember { mutableFloatStateOf(0f) }
     var pitch by remember { mutableFloatStateOf(0f) }
     var roll by remember { mutableFloatStateOf(0f) }
     var sensorAccuracy by remember { mutableIntStateOf(SensorManager.SENSOR_STATUS_ACCURACY_HIGH) }
@@ -98,10 +99,11 @@ fun QiblaARScreen(
         QiblaCalculator.getCompassDirectionArabic(qiblaBearing.toDouble())
     }
 
-    // Hardware Compass Sensor Listener with tilt compensation, GeomagneticField declination and low-pass smoothing
-    DisposableEffect(context, magneticDeclination) {
+    // Hardware Compass Sensor Listener with adaptive sensor fusion and mode-aware orientation calculation
+    DisposableEffect(context, magneticDeclination, isArMode) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
         val rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR)
         val accelSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val magSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
@@ -110,41 +112,56 @@ fun QiblaARScreen(
         var hasGravity = false
         var hasGeomagnetic = false
 
-        // Low-pass filter smoothing coefficient
-        val alpha = 0.2f
-        var smoothedAzimuth = 0f
+        // Exponential smoothing filter
+        var filteredHeading = 0f
+        var isFirstReading = true
 
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
                 if (event == null) return
 
                 val rotationMatrix = FloatArray(9)
-                val adjustedMatrix = FloatArray(9)
+                val outMatrix = FloatArray(9)
                 val orientation = FloatArray(3)
 
-                if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
+                if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR || event.sensor.type == Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR) {
                     SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                    // Remap coordinate system for portrait screen orientation
-                    SensorManager.remapCoordinateSystem(
-                        rotationMatrix,
-                        SensorManager.AXIS_X,
-                        SensorManager.AXIS_Z,
-                        adjustedMatrix
-                    )
-                    SensorManager.getOrientation(adjustedMatrix, orientation)
 
-                    val deg = Math.toDegrees(orientation[0].toDouble()).toFloat()
-                    val magneticAzimuth = (deg + 360f) % 360f
-                    // Correct for true geographic north using magnetic declination
-                    val trueNorthAzimuth = (magneticAzimuth + magneticDeclination + 360f) % 360f
+                    if (isArMode) {
+                        // In AR Camera Mode: Camera shoots through Z axis (back of device)
+                        SensorManager.remapCoordinateSystem(
+                            rotationMatrix,
+                            SensorManager.AXIS_X,
+                            SensorManager.AXIS_Z,
+                            outMatrix
+                        )
+                        SensorManager.getOrientation(outMatrix, orientation)
+                    } else {
+                        // In 2D Compass Mode: Top of device (Y axis) points forward
+                        SensorManager.getOrientation(rotationMatrix, orientation)
+                    }
 
-                    // Smooth angular transition avoiding 0/360 wrap glitch
-                    val diff = (trueNorthAzimuth - smoothedAzimuth + 540f) % 360f - 180f
-                    smoothedAzimuth = (smoothedAzimuth + alpha * diff + 360f) % 360f
+                    val magneticAzimuthDeg = (Math.toDegrees(orientation[0].toDouble()).toFloat() + 360f) % 360f
+                    val trueNorthHeading = (magneticAzimuthDeg + magneticDeclination + 360f) % 360f
 
-                    rawAzimuth = smoothedAzimuth
+                    if (isFirstReading) {
+                        filteredHeading = trueNorthHeading
+                        continuousTargetHeading = trueNorthHeading
+                        isFirstReading = false
+                    } else {
+                        val angleDiff = (trueNorthHeading - filteredHeading + 540f) % 360f - 180f
+                        // Adaptive smoothing: fast response for big turns, stable for micro-jitter
+                        val alpha = if (abs(angleDiff) > 10f) 0.45f else 0.2f
+                        filteredHeading = (filteredHeading + alpha * angleDiff + 360f) % 360f
+
+                        val continuousDiff = (filteredHeading - ((continuousTargetHeading % 360f + 360f) % 360f) + 540f) % 360f - 180f
+                        continuousTargetHeading += continuousDiff
+                    }
+
+                    rawAzimuth = filteredHeading
                     pitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
                     roll = Math.toDegrees(orientation[2].toDouble()).toFloat()
+
                 } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
                     System.arraycopy(event.values, 0, gravity, 0, 3)
                     hasGravity = true
@@ -155,22 +172,37 @@ fun QiblaARScreen(
 
                 if (rotationSensor == null && hasGravity && hasGeomagnetic) {
                     if (SensorManager.getRotationMatrix(rotationMatrix, null, gravity, geomagnetic)) {
-                        SensorManager.remapCoordinateSystem(
-                            rotationMatrix,
-                            SensorManager.AXIS_X,
-                            SensorManager.AXIS_Z,
-                            adjustedMatrix
-                        )
-                        SensorManager.getOrientation(adjustedMatrix, orientation)
-                        val deg = Math.toDegrees(orientation[0].toDouble()).toFloat()
-                        val magneticAzimuth = (deg + 360f) % 360f
-                        val trueNorthAzimuth = (magneticAzimuth + magneticDeclination + 360f) % 360f
+                        if (isArMode) {
+                            SensorManager.remapCoordinateSystem(
+                                rotationMatrix,
+                                SensorManager.AXIS_X,
+                                SensorManager.AXIS_Z,
+                                outMatrix
+                            )
+                            SensorManager.getOrientation(outMatrix, orientation)
+                        } else {
+                            SensorManager.getOrientation(rotationMatrix, orientation)
+                        }
 
-                        val diff = (trueNorthAzimuth - smoothedAzimuth + 540f) % 360f - 180f
-                        smoothedAzimuth = (smoothedAzimuth + alpha * diff + 360f) % 360f
+                        val magneticAzimuthDeg = (Math.toDegrees(orientation[0].toDouble()).toFloat() + 360f) % 360f
+                        val trueNorthHeading = (magneticAzimuthDeg + magneticDeclination + 360f) % 360f
 
-                        rawAzimuth = smoothedAzimuth
+                        if (isFirstReading) {
+                            filteredHeading = trueNorthHeading
+                            continuousTargetHeading = trueNorthHeading
+                            isFirstReading = false
+                        } else {
+                            val angleDiff = (trueNorthHeading - filteredHeading + 540f) % 360f - 180f
+                            val alpha = if (abs(angleDiff) > 10f) 0.45f else 0.2f
+                            filteredHeading = (filteredHeading + alpha * angleDiff + 360f) % 360f
+
+                            val continuousDiff = (filteredHeading - ((continuousTargetHeading % 360f + 360f) % 360f) + 540f) % 360f - 180f
+                            continuousTargetHeading += continuousDiff
+                        }
+
+                        rawAzimuth = filteredHeading
                         pitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
+                        roll = Math.toDegrees(orientation[2].toDouble()).toFloat()
                     }
                 }
             }
@@ -181,10 +213,10 @@ fun QiblaARScreen(
         }
 
         if (rotationSensor != null) {
-            sensorManager?.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+            sensorManager?.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_GAME)
         } else {
-            accelSensor?.let { sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
-            magSensor?.let { sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+            accelSensor?.let { sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_GAME) }
+            magSensor?.let { sensorManager?.registerListener(listener, it, SensorManager.SENSOR_DELAY_GAME) }
         }
 
         onDispose {
@@ -196,16 +228,18 @@ fun QiblaARScreen(
         }
     }
 
-    // Dynamic rotation animation with continuous angle tracking
-    val animatedAzimuth by animateFloatAsState(
-        targetValue = rawAzimuth,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium, dampingRatio = Spring.DampingRatioLowBouncy),
+    // Dynamic smooth rotation animation without 0/360 wrap-around jump glitches
+    val animatedContinuousAzimuth by animateFloatAsState(
+        targetValue = continuousTargetHeading,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
         label = "QiblaAzimuthAnimation"
     )
 
+    val currentHeading = (animatedContinuousAzimuth % 360f + 360f) % 360f
+
     // Angle offset difference between device heading and Kaaba bearing (-180..180)
-    val angleDiff = (qiblaBearing - animatedAzimuth + 540f) % 360f - 180f
-    val isFacingQibla = abs(angleDiff) <= 4.0f
+    val angleDiff = (qiblaBearing - currentHeading + 540f) % 360f - 180f
+    val isFacingQibla = abs(angleDiff) <= 3.5f
 
     Scaffold(
         topBar = {
@@ -359,7 +393,7 @@ fun QiblaARScreen(
                     )
                 } else {
                     AccurateCelestialCompass(
-                        animatedAzimuth = animatedAzimuth,
+                        animatedAzimuth = animatedContinuousAzimuth,
                         qiblaBearing = qiblaBearing,
                         isFacingQibla = isFacingQibla,
                         cardinalDirection = cardinalDirection
@@ -573,6 +607,7 @@ private fun AccurateCelestialCompass(
         }
 
         // 4. Center Heading Hub with Live Degrees and Direction
+        val normalizedDegree = ((animatedAzimuth % 360f + 360f) % 360f).toInt()
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface,
@@ -585,13 +620,13 @@ private fun AccurateCelestialCompass(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "${animatedAzimuth.toInt()}°",
+                    text = "$normalizedDegree°",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = if (isFacingQibla) Color(0xFF10B981) else MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = QiblaCalculator.getCompassDirectionArabic(animatedAzimuth.toDouble()).split(" ")[0],
+                    text = QiblaCalculator.getCompassDirectionArabic(normalizedDegree.toDouble()).split(" ")[0],
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.outline
