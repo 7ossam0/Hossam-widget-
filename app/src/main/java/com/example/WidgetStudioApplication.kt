@@ -5,22 +5,22 @@ import android.util.Log
 import com.example.data.database.AppDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class WidgetStudioApplication : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
 
-        // Global safety exception handler to prevent unhandled background crashes
+        // Global safety exception handler to shield against background/thread crashes
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("WidgetStudio", "Caught unhandled exception in thread ${thread.name}", throwable)
-            try {
-                // If it's a non-fatal background crash, log it rather than killing UI
+            Log.e("WidgetStudio", "Caught unhandled exception in thread ${thread.name}: ${throwable.message}", throwable)
+            // Prevent fatal exit on non-main threads
+            if (thread.name.contains("main", ignoreCase = true)) {
                 defaultHandler?.uncaughtException(thread, throwable)
-            } catch (e: Throwable) {
-                e.printStackTrace()
             }
         }
 
@@ -32,7 +32,7 @@ class WidgetStudioApplication : Application() {
         }
 
         // Warm up database safely in background
-        CoroutineScope(Dispatchers.IO).launch {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 AppDatabase.getInstance(this@WidgetStudioApplication)
             } catch (e: Throwable) {

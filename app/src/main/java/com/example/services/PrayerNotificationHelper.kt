@@ -221,7 +221,8 @@ object PrayerNotificationHelper {
 
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (alarmManager.canScheduleExactAlarms()) {
+                    val canExact = try { alarmManager.canScheduleExactAlarms() } catch (t: Throwable) { false }
+                    if (canExact) {
                         alarmManager.setExactAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             calendar.timeInMillis,
@@ -247,20 +248,24 @@ object PrayerNotificationHelper {
                         pendingIntent
                     )
                 }
-            } catch (se: SecurityException) {
+            } catch (se: Throwable) {
                 Log.w("PrayerNotificationHelper", "Cannot set exact alarm, falling back to inexact alarm", se)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        calendar.timeInMillis,
-                        pendingIntent
-                    )
-                } else {
-                    alarmManager.set(
-                        AlarmManager.RTC_WAKEUP,
-                        calendar.timeInMillis,
-                        pendingIntent
-                    )
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            calendar.timeInMillis,
+                            pendingIntent
+                        )
+                    } else {
+                        alarmManager.set(
+                            AlarmManager.RTC_WAKEUP,
+                            calendar.timeInMillis,
+                            pendingIntent
+                        )
+                    }
+                } catch (t: Throwable) {
+                    Log.w("PrayerNotificationHelper", "Alarm scheduling skipped: ${t.message}")
                 }
             }
 

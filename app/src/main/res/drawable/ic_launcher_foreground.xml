@@ -1,8 +1,32 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="72dp"
-        android:height="72dp"
-        android:drawable="@drawable/bayan_app_logo_1787537216322"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.65"
+        android:scaleY="0.65"
+        android:translateX="18.9"
+        android:translateY="18.9">
+        <!-- Outer Glowing Islamic Octagram / Star -->
+        <path
+            android:fillColor="#E5C07B"
+            android:pathData="M54,4 L66,18 L84,18 L88,36 L102,48 L94,64 L102,80 L88,92 L84,110 L66,110 L54,124 L42,110 L24,110 L20,92 L6,80 L14,64 L6,48 L20,36 L24,18 L42,18 Z"
+            android:fillAlpha="0.25"/>
+
+        <!-- Inner Crescent Moon -->
+        <path
+            android:fillColor="#E5C07B"
+            android:pathData="M54,16 C33.01,16 16,33.01 16,54 C16,74.99 33.01,92 54,92 C67.31,92 78.96,85.15 85.64,74.83 C80.12,77.51 73.89,79.03 67.3,79.03 C45.21,79.03 27.3,61.12 27.3,39.03 C27.3,27.91 31.84,17.84 39.17,10.64 C36.83,14.12 35.43,18.28 35.43,22.75 C35.43,36.42 46.48,47.47 60.15,47.47 C65.86,47.47 71.12,45.54 75.33,42.31 C72.82,27.18 64.67,16 54,16 Z"/>
+
+        <!-- Holy Quran Open Book Silhouette -->
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M54,58 C47,54 38,52 30,53 C27.8,53.3 26,55.1 26,57.3 L26,79.5 C26,82 28.5,84 31,83.5 C38,82.5 46,84.5 52,88.5 C53.2,89.3 54.8,89.3 56,88.5 C62,84.5 70,82.5 77,83.5 C79.5,84 82,82 82,79.5 L82,57.3 C82,55.1 80.2,53.3 78,53 C70,52 61,54 54,58 Z"/>
+
+        <!-- Illuminating Star / Minaret Top Light -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M68,26 L70.5,33.5 L78,36 L70.5,38.5 L68,46 L65.5,38.5 L58,36 L65.5,33.5 Z"/>
+    </group>
+</vector>
