@@ -12,6 +12,18 @@ class WidgetStudioApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // Global safety exception handler to prevent unhandled background crashes
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("WidgetStudio", "Caught unhandled exception in thread ${thread.name}", throwable)
+            try {
+                // If it's a non-fatal background crash, log it rather than killing UI
+                defaultHandler?.uncaughtException(thread, throwable)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
+
         // Initialize Notification Channels safely
         try {
             com.example.services.PrayerNotificationHelper.createNotificationChannels(this)
@@ -19,7 +31,7 @@ class WidgetStudioApplication : Application() {
             Log.e("WidgetStudio", "Error creating notification channels", e)
         }
 
-        // Warm up database in background
+        // Warm up database safely in background
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 AppDatabase.getInstance(this@WidgetStudioApplication)
@@ -29,3 +41,4 @@ class WidgetStudioApplication : Application() {
         }
     }
 }
+
